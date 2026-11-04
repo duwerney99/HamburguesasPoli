@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+server/data/*.db
+server/data/*.db-*
+coverage/
+*.log
+*service-account*.json
+firebase-adminsdk-*.json
+.firebase/
+firestore-debug.log

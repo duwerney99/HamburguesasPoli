@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // La aplicación accede exclusivamente desde Express mediante Admin SDK.
+    // Admin SDK se controla con IAM y no evalúa estas reglas. Todo acceso web
+    // o móvil directo queda bloqueado para proteger roles, hashes y auditoría.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

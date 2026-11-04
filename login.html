@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Bite - Iniciar Sesión</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                                                primary: {
+                            50: '#FFF1F2', 
+                            100: '#FFE4E6', 
+                            400: '#FB7185',
+                            500: '#F43F5E',
+                            600: '#E11D48', 
+                            700: '#BE123C', 
+                            800: '#9F1239',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glow-primary {
+            box-shadow: 0 0 50px -10px rgba(245, 158, 11, 0.25);
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between selection:bg-primary-500 selection:text-gray-950">
+
+    <!-- HEADER / NAVEGACIÓN SUPERIOR -->
+    <header class="border-b border-gray-800 bg-gray-950/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center space-x-3 group">
+                <span class="bg-gray-900 border border-gray-700/80 text-white font-black px-3 py-1.5 rounded-xl text-lg tracking-wider group-hover:border-gray-500 transition shadow-sm flex items-center gap-1">
+                    <span>SB</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary-400"></span>
+                </span>
+                <span class="font-extrabold text-xl tracking-tight text-white">Secret Bite</span>
+            </a>
+            
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <span class="hidden sm:inline text-xs text-gray-400">¿Aún no tienes cuenta?</span>
+                <a href="register.html" class="text-xs sm:text-sm font-semibold text-gray-200 hover:text-white border border-gray-700 hover:border-gray-500 bg-gray-900 px-4 py-2 rounded-xl transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-plus text-xs text-gray-400"></i>
+                    <span>Crear Cuenta</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL: LOGIN HERO Y FORMULARIO -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full flex items-center justify-center">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 w-full items-center">
+            
+            <!-- COLUMNA IZQUIERDA: SHOWCASE DE MARCA & BENEFICIOS EXCLUSIVOS -->
+            <div class="lg:col-span-6 space-y-6">
+                <div class="inline-flex items-center space-x-2 bg-gray-900 border border-gray-800 text-gray-200 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide">
+                    <i class="fa-solid fa-crown text-primary-400/90 text-xs"></i>
+                    <span>Portal Exclusivo para Miembros</span>
+                </div>
+
+                <h1 class="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+                    Accede al Menú Secreto y Define el Próximo Sabor.
+                </h1>
+
+                <p class="text-gray-300 text-sm sm:text-base leading-relaxed max-w-xl">
+                    Inicia sesión para votar por tu hamburguesa artesanal preferida, reservar lotes de producción limitada y canjear tus puntos por beneficios especiales.
+                </p>
+
+                <!-- Tarjeta Flotante de Beneficios -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div class="bg-gray-900/90 border border-gray-800 p-4 rounded-2xl">
+                        <div class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center mb-2 text-base">
+                            <i class="fa-solid fa-check-to-slot"></i>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">Tu Voto Decide</h4>
+                        <p class="text-[11px] text-gray-400 mt-1">1 voto mensual para decidir la burger ganadora.</p>
+                    </div>
+
+                    <div class="bg-gray-900/90 border border-gray-800 p-4 rounded-2xl">
+                        <div class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center mb-2 text-base">
+                            <i class="fa-solid fa-coins"></i>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">Puntos VIP</h4>
+                        <p class="text-[11px] text-gray-400 mt-1">Hasta 20% de descuento en pedidos recurrentes.</p>
+                    </div>
+
+                    <div class="bg-gray-900/90 border border-gray-800 p-4 rounded-2xl">
+                        <div class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center mb-2 text-base">
+                            <i class="fa-solid fa-fire-burner"></i>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">Reserva Rápida</h4>
+                        <p class="text-[11px] text-gray-400 mt-1">Garantiza tu combo antes del fin de existencias.</p>
+                    </div>
+                </div>
+
+                <!-- Mini Card de la Hamburguesa Ganadora -->
+                <div class="flex items-center space-x-4 p-3.5 bg-gray-900/90 border border-gray-800 rounded-2xl max-w-md">
+                    <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=200&q=80" alt="La Burger Explosiva" class="w-16 h-16 rounded-xl object-cover border border-gray-800">
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Ganadora de este mes</span>
+                        <h4 class="text-sm font-bold text-white truncate">La Burger Explosiva</h4>
+                        <p class="text-[11px] text-gray-400">Carne madurada 30 días • Lote de 100 combos</p>
+                    </div>
+                    <span class="text-white font-bold text-xs">$28.000</span>
+                </div>
+
+                <!-- Testimonio / Badge de comunidad -->
+                <div class="flex items-center space-x-3 p-3.5 bg-gray-900/60 border border-gray-800 rounded-2xl max-w-md">
+                    <div class="flex -space-x-2">
+                        <span class="w-8 h-8 rounded-full bg-primary-500 text-gray-950 font-black text-xs flex items-center justify-center border-2 border-gray-950">JD</span>
+                        <span class="w-8 h-8 rounded-full bg-red-500 text-white font-black text-xs flex items-center justify-center border-2 border-gray-950">MC</span>
+                        <span class="w-8 h-8 rounded-full bg-blue-500 text-white font-black text-xs flex items-center justify-center border-2 border-gray-950">AR</span>
+                    </div>
+                    <div class="text-xs">
+                        <p class="text-white font-bold">+1.240 miembros activos</p>
+                        <p class="text-gray-400">Votando en tiempo real en la Dark Kitchen</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA: TARJETA DE LOGIN -->
+            <div class="lg:col-span-6 flex justify-center">
+                <div class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden glow-primary">
+                    <!-- Efecto de luz ambiental ámbar en esquina -->
+                    <div class="absolute -right-20 -top-20 w-48 h-48 bg-primary-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="mb-6 text-center sm:text-left">
+                        <h2 class="text-2xl font-black text-white tracking-tight">Bienvenido de vuelta</h2>
+                        <p class="text-xs sm:text-sm text-gray-400 mt-1">Ingresa tus credenciales para acceder a tu panel.</p>
+                    </div>
+
+                    <!-- Botones de acceso rápido para demostración -->
+                    <div class="mb-6 p-3 bg-gray-950/70 rounded-2xl border border-gray-800/80">
+                        <span class="block text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-wider">
+                            <i class="fa-solid fa-wand-magic-sparkles text-gray-400 mr-1"></i> Accesos Demo Rápidos:
+                        </span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="cargarDemo('cliente')" class="text-xs font-semibold py-1.5 px-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/60 transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-user text-gray-400"></i>
+                                <span>Cliente Demo</span>
+                            </button>
+                            <button type="button" onclick="cargarDemo('admin')" class="text-xs font-semibold py-1.5 px-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/60 transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved text-gray-400"></i>
+                                <span>Admin Demo</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- FORMULARIO DE INICIO DE SESIÓN -->
+                    <form id="loginForm" onsubmit="procesarLogin(event)" class="space-y-4">
+                        
+                        <!-- Campo Correo -->
+                        <div>
+                            <label for="email" class="block text-xs font-semibold text-gray-300 mb-1.5">
+                                Correo Electrónico
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-500">
+                                    <i class="fa-solid fa-envelope text-sm"></i>
+                                </span>
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    name="email" 
+                                    autocomplete="username" 
+                                    required 
+                                    placeholder="ejemplo@secretbite.com" 
+                                    class="w-full bg-gray-950 border border-gray-800 text-white text-sm rounded-2xl pl-10 pr-4 py-3 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition placeholder-gray-600"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Campo Contraseña -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label for="password" class="text-xs font-semibold text-gray-300">
+                                    Contraseña
+                                </label>
+                                <a href="javascript:void(0)" onclick="alert('Ingresa tu correo para recibir las instrucciones de restablecimiento de contraseña.')" class="text-xs text-gray-400 hover:text-white transition font-medium">
+                                    ¿Olvidaste tu contraseña?
+                                </a>
+                            </div>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-500">
+                                    <i class="fa-solid fa-lock text-sm"></i>
+                                </span>
+                                <input 
+                                    type="password" 
+                                    id="password" 
+                                    name="password" 
+                                    autocomplete="current-password" 
+                                    required 
+                                    placeholder="••••••••" 
+                                    class="w-full bg-gray-950 border border-gray-800 text-white text-sm rounded-2xl pl-10 pr-11 py-3 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition placeholder-gray-600"
+                                >
+                                <button 
+                                    type="button" 
+                                    onclick="togglePasswordVisibility('password', 'toggleEyeIcon')" 
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-500 hover:text-gray-300 transition focus:outline-none"
+                                    title="Mostrar u ocultar contraseña"
+                                    aria-label="Mostrar u ocultar contraseña"
+                                >
+                                    <i id="toggleEyeIcon" class="fa-solid fa-eye text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Recordar Sesión -->
+                        <div class="flex items-center justify-between pt-1">
+                            <label class="flex items-center space-x-2.5 cursor-pointer">
+                                <input type="checkbox" id="remember" name="remember" class="w-4 h-4 rounded text-primary-500 bg-gray-950 border-gray-800 focus:ring-primary-500 focus:ring-offset-gray-900">
+                                <span class="text-xs text-gray-400 select-none">Recordar mi sesión en este equipo</span>
+                            </label>
+                        </div>
+
+                        <!-- Botón de Envío -->
+                        <div class="pt-2">
+                            <button 
+                                type="submit" 
+                                id="btnSubmit"
+                                class="w-full bg-primary-500 hover:bg-primary-400 text-gray-950 font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-primary-500/20 transition duration-200 flex items-center justify-center space-x-2 group"
+                            >
+                                <span id="btnSubmitText">Iniciar Sesión</span>
+                                <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition text-sm"></i>
+                            </button>
+                        </div>
+
+                        <!-- Separador -->
+                        <div class="relative flex py-2 items-center">
+                            <div class="flex-grow border-t border-gray-800"></div>
+                            <span class="flex-shrink mx-3 text-[11px] text-gray-500 uppercase tracking-wider">O continuar con</span>
+                            <div class="flex-grow border-t border-gray-800"></div>
+                        </div>
+
+                        <!-- Botones de Redes Sociales -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" onclick="alert('Autenticando con Google...')" class="flex items-center justify-center space-x-2 bg-gray-950 hover:bg-gray-800/80 border border-gray-800 py-2.5 px-4 rounded-xl text-xs font-semibold text-gray-300 transition">
+                                <i class="fa-brands fa-google text-red-400"></i>
+                                <span>Google</span>
+                            </button>
+                            <button type="button" onclick="alert('Autenticando con Apple ID...')" class="flex items-center justify-center space-x-2 bg-gray-950 hover:bg-gray-800/80 border border-gray-800 py-2.5 px-4 rounded-xl text-xs font-semibold text-gray-300 transition">
+                                <i class="fa-brands fa-apple text-white"></i>
+                                <span>Apple</span>
+                            </button>
+                        </div>
+
+                        <!-- Mensaje de Feedback -->
+                        <div id="loginAlert" class="hidden p-3 rounded-xl text-xs font-medium text-center"></div>
+
+                    </form>
+
+                    <!-- Enlace a Registro -->
+                    <div class="mt-6 text-center text-xs text-gray-400 border-t border-gray-800/60 pt-4">
+                        ¿Primera vez en Secret Bite? 
+                        <a href="register.html" class="text-primary-400 hover:text-primary-300 font-bold ml-1">
+                            Regístrate aquí
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-800 py-6 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>&copy; 2026 Secret Bite. Todos los derechos reservados.</p>
+            <div class="flex items-center space-x-4">
+                <a href="index.html" class="hover:text-gray-400 transition">Menú y Votaciones</a>
+                <a href="admin.html" class="hover:text-white transition">Panel Administrativo</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script>
+        // Mostrar / Ocultar contraseña
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Cargar credenciales preconfiguradas para pruebas
+        function cargarDemo(rol) {
+            const emailInput = document.getElementById('email');
+            const passInput = document.getElementById('password');
+
+            if (rol === 'cliente') {
+                emailInput.value = 'cliente.vip@secretbite.com';
+                passInput.value = 'SecretBite2026!';
+            } else if (rol === 'admin') {
+                emailInput.value = 'admin@secretbite.com';
+                passInput.value = 'AdminMaster2026!';
+            }
+        }
+
+        // Procesar simulación de login
+        function procesarLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const alertBox = document.getElementById('loginAlert');
+            const btnSubmit = document.getElementById('btnSubmit');
+            const btnText = document.getElementById('btnSubmitText');
+
+            btnSubmit.disabled = true;
+            btnText.innerText = 'Validando acceso...';
+
+            setTimeout(() => {
+                alertBox.classList.remove('hidden', 'bg-red-500/10', 'text-red-400', 'border-red-500/20', 'bg-green-500/10', 'text-green-400', 'border-green-500/20');
+                
+                if (email.includes('admin')) {
+                    alertBox.className = 'p-3 rounded-xl text-xs font-semibold text-center border bg-green-500/10 text-green-400 border-green-500/20';
+                    alertBox.innerHTML = '<i class="fa-solid fa-circle-check mr-1.5"></i> ¡Acceso concedido como Administrador! Redirigiendo al panel...';
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 1000);
+                } else {
+                    alertBox.className = 'p-3 rounded-xl text-xs font-semibold text-center border bg-green-500/10 text-green-400 border-green-500/20';
+                    alertBox.innerHTML = '<i class="fa-solid fa-circle-check mr-1.5"></i> ¡Bienvenido a Secret Bite! Redirigiendo al menú de reservas...';
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
+            }, 700);
+        }
+    </script>
+</body>
+</html>
+
+
+

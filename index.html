@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="es" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Bite - Dark Kitchen & Hamburguesas de Autor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        amber: { 
+                            400: '#fbbf24', 
+                            500: '#f59e0b',
+                            600: '#d97706'
+                        }
+                    },
+                    boxShadow: {
+                        'glow-amber': '0 0 35px -5px rgba(245, 158, 11, 0.3)',
+                        'glow-amber-lg': '0 0 60px -10px rgba(245, 158, 11, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style> 
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        /* Ocultar barra de scroll pero mantener funcionalidad */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Efecto de inclinación 3D para el showcase */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.2s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-gray-950">
+
+    <!-- HEADER / NAVEGACIÓN SUPERIOR -->
+    <header class="border-b border-gray-800/80 bg-gray-950/85 backdrop-blur-md sticky top-0 z-50 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+            
+            <!-- Marca y Logo -->
+            <a href="index.html" class="flex items-center space-x-3 group">
+                <span class="bg-amber-500 text-gray-950 font-black px-3 py-1.5 rounded-xl text-lg tracking-wider shadow-lg shadow-amber-500/20 group-hover:scale-105 group-hover:bg-amber-400 transition">
+                    SB
+                </span>
+                <div>
+                    <span class="font-extrabold text-xl tracking-tight text-white block leading-none">
+                        Secret <span class="text-amber-400">Bite</span>
+                    </span>
+                    <span class="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">
+                        Dark Kitchen & Club 3D
+                    </span>
+                </div>
+            </a>
+
+            <!-- Navegación Central -->
+            <nav class="hidden md:flex items-center space-x-7 text-xs font-bold text-gray-300">
+                <a href="#destacada" class="text-amber-400 hover:text-amber-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-crown text-xs"></i>
+                    <span>La Ganadora</span>
+                </a>
+                <a href="#carruselSeccion" class="hover:text-amber-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-burger text-xs"></i>
+                    <span>Menú de Votaciones</span>
+                </a>
+                <a href="#experiencia" class="hover:text-amber-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-fire-burner text-xs"></i>
+                    <span>El Secreto</span>
+                </a>
+                <a href="admin.html" class="hover:text-amber-300 text-gray-400 transition flex items-center gap-1.5 bg-gray-900/60 border border-gray-800 px-2.5 py-1 rounded-lg">
+                    <i class="fa-solid fa-shield-halved text-amber-400 text-xs"></i>
+                    <span>Panel Cocina</span>
+                </a>
+            </nav>
+
+            <!-- Acciones de Usuario & Puntos -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <!-- Badge de Puntos de Fidelización -->
+                <div class="bg-gradient-to-r from-amber-500/15 to-amber-500/5 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-xs font-bold text-amber-400 flex items-center shadow-sm">
+                    <i class="fa-solid fa-coins mr-1.5 text-amber-400 animate-pulse"></i>
+                    <span class="hidden sm:inline mr-1">Tus Puntos:</span>
+                    <span class="text-white font-black" id="headerPuntos">30</span>
+                    <span class="text-[10px] text-amber-400/90 ml-1.5 hidden md:inline">(-15% OFF)</span>
+                </div>
+
+                <!-- Botones Login / Registro -->
+                <a href="login.html" class="text-xs font-bold text-gray-300 hover:text-white bg-gray-900 hover:bg-gray-800 border border-gray-800 px-3.5 py-2 rounded-xl transition">
+                    Entrar
+                </a>
+                <a href="register.html" class="hidden sm:flex text-xs font-black text-gray-950 bg-amber-500 hover:bg-amber-400 px-4 py-2 rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 transition items-center gap-1.5">
+                    <i class="fa-solid fa-gift text-xs"></i>
+                    <span>+10 Puntos</span>
+                </a>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full space-y-16">
+        
+        <!-- SECCIÓN 1: DESTACADO CON FOTOGRAFÍA REAL & SHOWCASE 3D INTERACTIVO -->
+        <section id="destacada" class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center bg-gradient-to-b from-gray-900 to-gray-900/70 border border-gray-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+            
+            <!-- Resplandor ambiental de fondo -->
+            <div class="absolute -right-28 -top-28 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-28 -bottom-28 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Columna Izquierda: Información de la Hamburguesa Ganadora -->
+            <div class="lg:col-span-6 space-y-5 z-10">
+                
+                <!-- Badges de Estado -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center space-x-2 bg-amber-500/15 border border-amber-500/30 text-amber-400 px-3.5 py-1.5 rounded-full text-xs font-black tracking-wide">
+                        <i class="fa-solid fa-trophy text-amber-400"></i>
+                        <span>Hamburguesa Ganadora del Mes</span>
+                    </span>
+                    <span class="inline-flex items-center space-x-1.5 bg-gray-950/80 border border-gray-800 text-gray-300 px-3 py-1 rounded-full text-xs font-semibold">
+                        <i class="fa-solid fa-stopwatch text-amber-400"></i>
+                        <span>Cierre de lote: <strong>4 días</strong></span>
+                    </span>
+                </div>
+
+                <!-- Título Principal -->
+                <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none">
+                    La Burger <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500">Explosiva</span>
+                </h1>
+
+                <!-- Descripción Gourmet -->
+                <p class="text-gray-300 text-sm sm:text-base leading-relaxed">
+                    Carne 100% Angus madurada en frío durante 30 días (220g), doble capa de queso cheddar fundido al calor de leña de manzano, crujiente tocino ahumado en miel de maple, cebolla frita en tempura y salsa secreta de trufa negra servida en pan brioche artesanal dorado a la mantequilla.
+                </p>
+
+                <!-- Píldoras de Ingredientes Clave -->
+                <div class="flex flex-wrap gap-2 pt-1">
+                    <span class="text-[11px] font-semibold bg-gray-950 border border-gray-800 text-gray-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <i class="fa-solid fa-cow text-amber-400"></i> 220g Angus Madurada
+                    </span>
+                    <span class="text-[11px] font-semibold bg-gray-950 border border-gray-800 text-gray-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <i class="fa-solid fa-cheese text-amber-400"></i> Cheddar Ahumado
+                    </span>
+                    <span class="text-[11px] font-semibold bg-gray-950 border border-gray-800 text-gray-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <i class="fa-solid fa-bacon text-amber-400"></i> Bacon en Maple
+                    </span>
+                    <span class="text-[11px] font-semibold bg-gray-950 border border-gray-800 text-gray-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <i class="fa-solid fa-bread-slice text-amber-400"></i> Brioche Casero
+                    </span>
+                </div>
+
+                <!-- Garantía de Combo Estandarizado -->
+                <div class="bg-gray-950/70 border border-gray-800/90 p-4 rounded-2xl flex items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center flex-shrink-0 text-base">
+                            <i class="fa-solid fa-box-check"></i>
+                        </div>
+                        <div class="text-xs">
+                            <span class="font-black text-white block text-sm">Combo Estandarizado Incluido</span>
+                            <span class="text-gray-400">Incluye papas fritas rústicas al romero y bebida fría a elección.</span>
+                        </div>
+                    </div>
+                    <span class="text-[11px] bg-amber-500/10 text-amber-400 font-bold px-2.5 py-1 rounded-lg border border-amber-500/20 whitespace-nowrap">
+                        100% Completo
+                    </span>
+                </div>
+
+                <!-- Barra de Disponibilidad de Lote -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-gray-300">Cupos de producción de este lote:</span>
+                        <span class="text-amber-400">76 de 100 reservados (¡Quedan 24!)</span>
+                    </div>
+                    <div class="w-full bg-gray-950 h-2.5 rounded-full overflow-hidden p-0.5 border border-gray-800">
+                        <div class="bg-gradient-to-r from-amber-500 to-amber-400 h-full rounded-full" style="width: 76%"></div>
+                    </div>
+                </div>
+
+                <!-- Precio y CTA Principal -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-gray-800/80">
+                    <div>
+                        <div class="text-[11px] text-gray-400 uppercase font-semibold tracking-wider">Precio Combo Completo</div>
+                        <div class="flex items-baseline space-x-2">
+                            <span class="text-3xl sm:text-4xl font-black text-amber-400">$28.000</span>
+                            <span class="text-xs text-gray-400 font-bold">COP</span>
+                            <span class="text-xs text-gray-500 line-through font-medium">$34.000</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <button 
+                            onclick="abrirModalReserva('La Burger Explosiva', 28000, 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80', 'Carne madurada 30 días, doble cheddar ahumado, bacon en maple y salsa secreta.')" 
+                            class="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 text-gray-950 font-black px-7 py-3.5 rounded-2xl shadow-glow-amber hover:shadow-glow-amber-lg transition-all duration-200 flex items-center justify-center space-x-2 group"
+                        >
+                            <span>Reservar Mi Combo</span>
+                            <i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Columna Derecha: Visor con Fotografía Real de Hamburguesa & Animación 3D -->
+            <div class="lg:col-span-6 flex justify-center perspective-1000 z-10">
+                <div 
+                    id="card3D"
+                    onmousemove="tiltCard(event)" 
+                    onmouseleave="resetCard()"
+                    class="transform-3d w-full max-w-lg bg-gray-950 border border-gray-800/90 rounded-3xl p-5 shadow-2xl relative group overflow-hidden"
+                >
+                    <!-- Marco de Fotografía Real de Alta Definición -->
+                    <div class="relative w-full h-[320px] sm:h-[400px] rounded-2xl overflow-hidden bg-gray-900 border border-gray-800">
+                        <img 
+                            src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80" 
+                            alt="La Burger Explosiva - Carne Angus Madurada y Queso Cheddar"
+                            fetchpriority="high"
+                            decoding="async"
+                            class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                        >
+                        <!-- Gradiente de sombra ambiental sobre la imagen -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent opacity-80"></div>
+                        
+                        <!-- Badges Flotantes sobre la Imagen Real -->
+                        <div class="absolute top-3 left-3 bg-gray-950/80 backdrop-blur-md border border-gray-800 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-400 flex items-center space-x-1.5 shadow-lg">
+                            <i class="fa-solid fa-star text-amber-400"></i>
+                            <span>4.9 / 5.0 (148 reseñas)</span>
+                        </div>
+
+                        <div class="absolute top-3 right-3 bg-red-600 text-white px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider shadow-lg animate-pulse">
+                            ¡Edición Limitada!
+                        </div>
+
+                        <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                            <div class="bg-gray-950/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-gray-800 text-[11px] text-gray-300 font-semibold flex items-center space-x-2">
+                                <span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+                                <span>3D Interactive Card</span>
+                            </div>
+                            <span class="text-[11px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold px-3 py-1 rounded-xl backdrop-blur-md">
+                                Incluye Papas & Bebida
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Leyenda Inferior del Visor -->
+                    <div class="mt-3 flex items-center justify-between text-xs text-gray-400 px-1">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-hand-pointer text-amber-400 text-xs"></i>
+                            <span>Mueve el cursor para interactuar con la perspectiva 3D</span>
+                        </span>
+                        <button onclick="alert('Abriendo vista 360° en alta resolución...')" class="text-amber-400 hover:text-amber-300 font-bold transition">
+                            Ver en 360°
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+        <!-- SECCIÓN 2: CARRUSEL CON IMÁGENES REALES (Menú de Votaciones Activas) -->
+        <section id="carruselSeccion" class="space-y-6">
+            
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                    <div class="inline-flex items-center space-x-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-bold mb-2">
+                        <i class="fa-solid fa-fire text-amber-400"></i>
+                        <span>Catálogo Exclusivo en Votación</span>
+                    </div>
+                    <h2 class="text-2xl sm:text-4xl font-black text-white tracking-tight">
+                        Explora las Creaciones & Elige la Próxima Ganadora
+                    </h2>
+                    <p class="text-xs sm:text-sm text-gray-400 mt-1">
+                        Desliza hacia los lados para examinar los prototipos gourmet. Tu voto define qué hamburguesa cocinamos en el próximo lote.
+                    </p>
+                </div>
+
+                <!-- Controles de Desplazamiento del Carrusel -->
+                <div class="flex items-center space-x-2">
+                    <button 
+                        onclick="scrollCarrusel(-1)" 
+                        aria-label="Desplazar a la izquierda" 
+                        class="w-11 h-11 rounded-2xl bg-gray-900 border border-gray-800 hover:border-amber-500/50 hover:bg-gray-800 text-white flex items-center justify-center transition shadow-lg active:scale-95"
+                    >
+                        <i class="fa-solid fa-chevron-left text-sm"></i>
+                    </button>
+                    <button 
+                        onclick="scrollCarrusel(1)" 
+                        aria-label="Desplazar a la derecha" 
+                        class="w-11 h-11 rounded-2xl bg-gray-900 border border-gray-800 hover:border-amber-500/50 hover:bg-gray-800 text-white flex items-center justify-center transition shadow-lg active:scale-95"
+                    >
+                        <i class="fa-solid fa-chevron-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR DEL CARRUSEL CON FOTOGRAFÍAS REALES -->
+            <div id="carruselBurgers" class="flex space-x-6 overflow-x-auto no-scrollbar pb-6 pt-2 px-1 snap-x scroll-smooth">
+                
+                <!-- CARD 1: LA BURGER EXPLOSIVA (Ganadora) -->
+                <div class="min-w-[300px] sm:min-w-[340px] max-w-[340px] bg-gray-900 border-2 border-amber-500 rounded-3xl p-5 snap-start transition flex flex-col justify-between group shadow-xl relative">
+                    <div class="absolute -top-3 right-4 bg-amber-500 text-gray-950 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
+                        🏆 #1 Ganadora
+                    </div>
+                    
+                    <div>
+                        <!-- Imagen Real de la Hamburguesa -->
+                        <div class="w-full h-48 rounded-2xl mb-4 overflow-hidden bg-gray-950 border border-gray-800 relative">
+                            <img 
+                                src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80" 
+                                alt="La Burger Explosiva" 
+                                loading="lazy"
+                                decoding="async"
+                                class="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                            >
+                            <span class="absolute bottom-2 left-2 bg-gray-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-400 border border-gray-800">
+                                <i class="fa-solid fa-star text-amber-400 mr-1"></i> 4.9 (148)
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="font-black text-lg text-white group-hover:text-amber-400 transition">La Burger Explosiva</h3>
+                            <span class="text-xs font-bold text-gray-400">220g</span>
+                        </div>
+                        <p class="text-xs text-gray-400 line-clamp-2 mb-3">Carne madurada 30 días, doble cheddar ahumado, bacon en maple y salsa trufada.</p>
+                        
+                        <!-- Barra de Votos -->
+                        <div class="space-y-1 mb-4">
+                            <div class="flex justify-between text-[11px] font-bold">
+                                <span class="text-amber-400">38 Votos de 50</span>
+                                <span class="text-gray-400">76% Meta</span>
+                            </div>
+                            <div class="w-full bg-gray-950 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-amber-500 h-full rounded-full" style="width: 76%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block font-semibold">Combo + Papas</span>
+                            <span class="text-amber-400 font-black text-lg">$28.000 COP</span>
+                        </div>
+                        <button 
+                            onclick="abrirModalReserva('La Burger Explosiva', 28000, 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80', 'Carne madurada 30 días, doble cheddar ahumado, bacon en maple y salsa secreta.')" 
+                            class="bg-amber-500 hover:bg-amber-400 text-gray-950 text-xs font-black px-4 py-2.5 rounded-xl shadow-md shadow-amber-500/20 transition"
+                        >
+                            Reservar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CARD 2: BBQ CRUNCH SUPREME -->
+                <div class="min-w-[300px] sm:min-w-[340px] max-w-[340px] bg-gray-900 border border-gray-800 hover:border-amber-500/50 rounded-3xl p-5 snap-start transition flex flex-col justify-between group shadow-xl relative">
+                    <div>
+                        <!-- Imagen Real -->
+                        <div class="w-full h-48 rounded-2xl mb-4 overflow-hidden bg-gray-950 border border-gray-800 relative">
+                            <img 
+                                src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=800&q=80" 
+                                alt="BBQ Crunch Supreme" 
+                                loading="lazy"
+                                decoding="async"
+                                class="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                            >
+                            <span class="absolute bottom-2 left-2 bg-gray-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-400 border border-gray-800">
+                                <i class="fa-solid fa-star text-amber-400 mr-1"></i> 4.8 (95)
+                            </span>
+                            <span class="absolute top-2 right-2 bg-gray-900/90 text-gray-200 text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-800">
+                                Crujiente BBQ
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="font-black text-lg text-white group-hover:text-amber-400 transition">BBQ Crunch Supreme</h3>
+                            <span class="text-xs font-bold text-gray-400">200g</span>
+                        </div>
+                        <p class="text-xs text-gray-400 line-clamp-2 mb-3">Aros de cebolla empanizados en panko, queso pepper jack y salsa BBQ con notas de Bourbon.</p>
+                        
+                        <!-- Barra de Votos -->
+                        <div class="space-y-1 mb-4">
+                            <div class="flex justify-between text-[11px] font-bold">
+                                <span class="text-gray-300">29 Votos de 50</span>
+                                <span class="text-gray-500">58% Meta</span>
+                            </div>
+                            <div class="w-full bg-gray-950 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-amber-500/70 h-full rounded-full" style="width: 58%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block font-semibold">Combo + Papas</span>
+                            <span class="text-amber-400 font-black text-lg">$26.000 COP</span>
+                        </div>
+                        <div class="flex space-x-1.5">
+                            <button onclick="votarPorBurger('BBQ Crunch Supreme')" class="bg-gray-800 hover:bg-gray-700 text-amber-400 text-xs font-bold p-2.5 rounded-xl transition" title="Dar mi voto del mes">
+                                <i class="fa-solid fa-heart"></i>
+                            </button>
+                            <button 
+                                onclick="abrirModalReserva('BBQ Crunch Supreme', 26000, 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=800&q=80', 'Aros de cebolla en panko, queso pepper jack y salsa BBQ artesanal.')" 
+                                class="bg-gray-800 hover:bg-amber-500 hover:text-gray-950 text-gray-200 text-xs font-bold px-3.5 py-2.5 rounded-xl transition"
+                            >
+                                Seleccionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 3: TRUFFLE MUSHROOM -->
+                <div class="min-w-[300px] sm:min-w-[340px] max-w-[340px] bg-gray-900 border border-gray-800 hover:border-amber-500/50 rounded-3xl p-5 snap-start transition flex flex-col justify-between group shadow-xl relative">
+                    <div>
+                        <!-- Imagen Real -->
+                        <div class="w-full h-48 rounded-2xl mb-4 overflow-hidden bg-gray-950 border border-gray-800 relative">
+                            <img 
+                                src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80" 
+                                alt="Truffle Mushroom Burger" 
+                                loading="lazy"
+                                decoding="async"
+                                class="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                            >
+                            <span class="absolute bottom-2 left-2 bg-gray-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-400 border border-gray-800">
+                                <i class="fa-solid fa-star text-amber-400 mr-1"></i> 4.9 (112)
+                            </span>
+                            <span class="absolute top-2 right-2 bg-purple-900/80 text-purple-200 text-[10px] font-bold px-2 py-0.5 rounded-md border border-purple-800">
+                                Trufa Gourmet
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="font-black text-lg text-white group-hover:text-amber-400 transition">Truffle Mushroom</h3>
+                            <span class="text-xs font-bold text-gray-400">210g</span>
+                        </div>
+                        <p class="text-xs text-gray-400 line-clamp-2 mb-3">Hongos portobello confitados al vino blanco con emulsión de trufas negras y queso suizo.</p>
+                        
+                        <!-- Barra de Votos -->
+                        <div class="space-y-1 mb-4">
+                            <div class="flex justify-between text-[11px] font-bold">
+                                <span class="text-gray-300">19 Votos de 50</span>
+                                <span class="text-gray-500">38% Meta</span>
+                            </div>
+                            <div class="w-full bg-gray-950 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-amber-500/70 h-full rounded-full" style="width: 38%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block font-semibold">Combo + Papas</span>
+                            <span class="text-amber-400 font-black text-lg">$30.000 COP</span>
+                        </div>
+                        <div class="flex space-x-1.5">
+                            <button onclick="votarPorBurger('Truffle Mushroom')" class="bg-gray-800 hover:bg-gray-700 text-amber-400 text-xs font-bold p-2.5 rounded-xl transition" title="Dar mi voto del mes">
+                                <i class="fa-solid fa-heart"></i>
+                            </button>
+                            <button 
+                                onclick="abrirModalReserva('Truffle Mushroom', 30000, 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80', 'Portobellos confitados, emulsión de trufa negra y queso suizo derretido.')" 
+                                class="bg-gray-800 hover:bg-amber-500 hover:text-gray-950 text-gray-200 text-xs font-bold px-3.5 py-2.5 rounded-xl transition"
+                            >
+                                Seleccionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 4: SPICY JALAPEÑO BOMB -->
+                <div class="min-w-[300px] sm:min-w-[340px] max-w-[340px] bg-gray-900 border border-gray-800 hover:border-amber-500/50 rounded-3xl p-5 snap-start transition flex flex-col justify-between group shadow-xl relative">
+                    <div>
+                        <!-- Imagen Real -->
+                        <div class="w-full h-48 rounded-2xl mb-4 overflow-hidden bg-gray-950 border border-gray-800 relative">
+                            <img 
+                                src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&w=800&q=80" 
+                                alt="Spicy Jalapeño Bomb" 
+                                loading="lazy"
+                                decoding="async"
+                                class="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                            >
+                            <span class="absolute bottom-2 left-2 bg-gray-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-400 border border-gray-800">
+                                <i class="fa-solid fa-star text-amber-400 mr-1"></i> 4.7 (83)
+                            </span>
+                            <span class="absolute top-2 right-2 bg-red-900/80 text-red-200 text-[10px] font-bold px-2 py-0.5 rounded-md border border-red-800">
+                                🔥 Picante Medio
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="font-black text-lg text-white group-hover:text-amber-400 transition">Spicy Jalapeño Bomb</h3>
+                            <span class="text-xs font-bold text-gray-400">200g</span>
+                        </div>
+                        <p class="text-xs text-gray-400 line-clamp-2 mb-3">Jalapeños en tempura crujiente, mermelada picante de tocino y queso provolone fundido.</p>
+                        
+                        <!-- Barra de Votos -->
+                        <div class="space-y-1 mb-4">
+                            <div class="flex justify-between text-[11px] font-bold">
+                                <span class="text-gray-300">12 Votos de 50</span>
+                                <span class="text-gray-500">24% Meta</span>
+                            </div>
+                            <div class="w-full bg-gray-950 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-amber-500/70 h-full rounded-full" style="width: 24%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block font-semibold">Combo + Papas</span>
+                            <span class="text-amber-400 font-black text-lg">$27.000 COP</span>
+                        </div>
+                        <div class="flex space-x-1.5">
+                            <button onclick="votarPorBurger('Spicy Jalapeño Bomb')" class="bg-gray-800 hover:bg-gray-700 text-amber-400 text-xs font-bold p-2.5 rounded-xl transition" title="Dar mi voto del mes">
+                                <i class="fa-solid fa-heart"></i>
+                            </button>
+                            <button 
+                                onclick="abrirModalReserva('Spicy Jalapeño Bomb', 27000, 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&w=800&q=80', 'Jalapeños en tempura crujiente, mermelada picante de tocino y provolone.')" 
+                                class="bg-gray-800 hover:bg-amber-500 hover:text-gray-950 text-gray-200 text-xs font-bold px-3.5 py-2.5 rounded-xl transition"
+                            >
+                                Seleccionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 5: SMOKED CHIPOTLE MASTER -->
+                <div class="min-w-[300px] sm:min-w-[340px] max-w-[340px] bg-gray-900 border border-gray-800 hover:border-amber-500/50 rounded-3xl p-5 snap-start transition flex flex-col justify-between group shadow-xl relative">
+                    <div>
+                        <!-- Imagen Real -->
+                        <div class="w-full h-48 rounded-2xl mb-4 overflow-hidden bg-gray-950 border border-gray-800 relative">
+                            <img 
+                                src="https://images.unsplash.com/photo-1553979459-d2229ba7433b?auto=format&fit=crop&w=800&q=80" 
+                                alt="Smoked Chipotle Master" 
+                                loading="lazy"
+                                decoding="async"
+                                class="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                            >
+                            <span class="absolute bottom-2 left-2 bg-gray-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-400 border border-gray-800">
+                                <i class="fa-solid fa-star text-amber-400 mr-1"></i> 4.9 (67)
+                            </span>
+                            <span class="absolute top-2 right-2 bg-amber-900/80 text-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-md border border-amber-800">
+                                Nuevo Prototipo
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="font-black text-lg text-white group-hover:text-amber-400 transition">Smoked Chipotle</h3>
+                            <span class="text-xs font-bold text-gray-400">220g</span>
+                        </div>
+                        <p class="text-xs text-gray-400 line-clamp-2 mb-3">Carne a la parrilla de carbón, chimichurri ahumado de la casa y chipotle cremoso.</p>
+                        
+                        <!-- Barra de Votos -->
+                        <div class="space-y-1 mb-4">
+                            <div class="flex justify-between text-[11px] font-bold">
+                                <span class="text-gray-300">8 Votos de 50</span>
+                                <span class="text-gray-500">16% Meta</span>
+                            </div>
+                            <div class="w-full bg-gray-950 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-amber-500/70 h-full rounded-full" style="width: 16%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+                        <div>
+                            <span class="text-[10px] text-gray-400 block font-semibold">Combo + Papas</span>
+                            <span class="text-amber-400 font-black text-lg">$29.000 COP</span>
+                        </div>
+                        <div class="flex space-x-1.5">
+                            <button onclick="votarPorBurger('Smoked Chipotle')" class="bg-gray-800 hover:bg-gray-700 text-amber-400 text-xs font-bold p-2.5 rounded-xl transition" title="Dar mi voto del mes">
+                                <i class="fa-solid fa-heart"></i>
+                            </button>
+                            <button 
+                                onclick="abrirModalReserva('Smoked Chipotle', 29000, 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?auto=format&fit=crop&w=800&q=80', 'Carne a la brasa, chimichurri ahumado y suave chipotle.')" 
+                                class="bg-gray-800 hover:bg-amber-500 hover:text-gray-950 text-gray-200 text-xs font-bold px-3.5 py-2.5 rounded-xl transition"
+                            >
+                                Seleccionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: EL SECRETO DE NUESTRA DARK KITCHEN (VALOR & CONFIANZA) -->
+        <section id="experiencia" class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 sm:p-10 relative overflow-hidden">
+            <div class="text-center max-w-2xl mx-auto mb-10">
+                <span class="text-amber-400 text-xs font-extrabold uppercase tracking-widest block mb-1">
+                    ¿Cómo Funciona Secret Bite?
+                </span>
+                <h3 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    Una Experiencia Gastronómica Exclusiva
+                </h3>
+                <p class="text-xs sm:text-sm text-gray-400 mt-2">
+                    No somos una cocina rápida convencional. Creamos lotes limitados basados en los votos de nuestra comunidad secreta.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                
+                <div class="bg-gray-950/80 border border-gray-800/90 rounded-2xl p-5 space-y-3 hover:border-amber-500/40 transition">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-check-to-slot"></i>
+                    </div>
+                    <h4 class="font-bold text-white text-base">1. Votación Mensual</h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Cada miembro tiene 1 voto al mes. Si una hamburguesa supera los 50 votos, pasa a la línea de cocina.
+                    </p>
+                </div>
+
+                <div class="bg-gray-950/80 border border-gray-800/90 rounded-2xl p-5 space-y-3 hover:border-amber-500/40 transition">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-fire-burner"></i>
+                    </div>
+                    <h4 class="font-bold text-white text-base">2. Lotes de 100 Unidades</h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Para garantizar frescura y calidad artesanal suprema, solo preparamos 100 combos por lote programado.
+                    </p>
+                </div>
+
+                <div class="bg-gray-950/80 border border-gray-800/90 rounded-2xl p-5 space-y-3 hover:border-amber-500/40 transition">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    <h4 class="font-bold text-white text-base">3. Combo Estandarizado</h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Cada orden incluye obligatoriamente papas fritas rústicas al romero y bebida artesanal en empaque térmico.
+                    </p>
+                </div>
+
+                <div class="bg-gray-950/80 border border-gray-800/90 rounded-2xl p-5 space-y-3 hover:border-amber-500/40 transition">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                    <h4 class="font-bold text-white text-base">4. Puntos Reales</h4>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Ganas puntos con cada orden y voto. Canjéalos por hasta un 20% de descuento directo en tus reservas.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-800 py-8 text-xs text-gray-500 bg-gray-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <span class="bg-amber-500 text-gray-950 font-black px-2 py-1 rounded-lg text-sm">SB</span>
+                <span>&copy; 2026 Secret Bite. Sistema Dark Kitchen de Autor & Carrusel 3D.</span>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-5 font-semibold text-gray-400">
+                <a href="login.html" class="hover:text-amber-400 transition">Iniciar Sesión</a>
+                <a href="register.html" class="hover:text-amber-400 transition">Crear Cuenta VIP</a>
+                <a href="admin.html" class="hover:text-amber-400 transition text-amber-400 font-bold">Panel Cocina (Admin)</a>
+                <span class="text-gray-700">|</span>
+                <span class="text-gray-500"><i class="fa-solid fa-location-dot text-amber-400 mr-1"></i> Bogotá, D.C.</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL INTERACTIVO DE CONFIRMACIÓN DE RESERVA DE COMBO -->
+    <div id="modalReserva" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            
+            <div class="flex items-center justify-between pb-4 border-b border-gray-800">
+                <div class="flex items-center space-x-2">
+                    <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm font-bold">
+                        <i class="fa-solid fa-burger"></i>
+                    </span>
+                    <h3 class="font-black text-lg text-white">Configurar Reserva de Combo</h3>
+                </div>
+                <button onclick="cerrarModalReserva()" class="text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Resumen de la Burger Seleccionada -->
+            <div class="py-4 space-y-4">
+                <div class="flex items-center space-x-4 bg-gray-950 p-3.5 rounded-2xl border border-gray-800">
+                    <img id="modalBurgerImg" src="" alt="Burger seleccionada" class="w-16 h-16 rounded-xl object-cover border border-gray-800">
+                    <div class="flex-1 min-w-0">
+                        <h4 id="modalBurgerNombre" class="text-base font-black text-white truncate">La Burger Explosiva</h4>
+                        <p id="modalBurgerDesc" class="text-[11px] text-gray-400 line-clamp-1">Carne madurada 30 días con cheddar fundido.</p>
+                        <span id="modalBurgerPrecioUnit" class="text-xs font-black text-amber-400">$28.000 COP</span>
+                    </div>
+                </div>
+
+                <!-- Aviso de combo estandarizado obligatorio -->
+                <div class="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl flex items-center space-x-2 text-xs text-amber-300">
+                    <i class="fa-solid fa-circle-check text-amber-400 text-sm"></i>
+                    <span><strong>Combo Estandarizado:</strong> Incluye papas fritas rústicas y gaseosa de 400ml.</span>
+                </div>
+
+                <!-- Selector de Cantidad -->
+                <div class="flex items-center justify-between bg-gray-950 p-3 rounded-2xl border border-gray-800">
+                    <span class="text-xs font-bold text-gray-300">Cantidad de combos:</span>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="ajustarCantidadModal(-1)" class="w-8 h-8 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold flex items-center justify-center transition">
+                            <i class="fa-solid fa-minus text-xs"></i>
+                        </button>
+                        <span id="modalCantidad" class="text-base font-black text-white w-6 text-center">1</span>
+                        <button onclick="ajustarCantidadModal(1)" class="w-8 h-8 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold flex items-center justify-center transition">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canjear Puntos de Fidelización -->
+                <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800 flex items-center justify-between">
+                    <label class="flex items-center space-x-2.5 cursor-pointer">
+                        <input type="checkbox" id="modalUsarPuntos" onchange="calcularTotalModal()" checked class="w-4 h-4 rounded text-amber-500 bg-gray-900 border-gray-700 focus:ring-amber-500">
+                        <div class="text-xs">
+                            <span class="font-bold text-white block">Aplicar 30 Puntos Secret Bite</span>
+                            <span class="text-amber-400 text-[10px]">15% de Descuento Especial aplicado</span>
+                        </div>
+                    </label>
+                    <span id="modalAhorroBadge" class="text-xs font-bold text-green-400 bg-green-500/10 px-2 py-1 rounded-lg border border-green-500/20">
+                        - $4.200 COP
+                    </span>
+                </div>
+
+                <!-- Total Calculado -->
+                <div class="flex items-center justify-between pt-2 border-t border-gray-800">
+                    <div>
+                        <span class="text-[11px] text-gray-400 block uppercase font-semibold">Total a Cancelar:</span>
+                        <span id="modalTotalPagar" class="text-2xl font-black text-amber-400">$23.800 COP</span>
+                    </div>
+                    <button onclick="confirmarReservaFinal()" class="bg-amber-500 hover:bg-amber-400 text-gray-950 font-black px-6 py-3 rounded-2xl shadow-lg shadow-amber-500/20 transition flex items-center space-x-2">
+                        <span>Confirmar Orden</span>
+                        <i class="fa-solid fa-check text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SCRIPTS DE INTERACTIVIDAD -->
+    <script>
+        // Desplazamiento horizontal del carrusel
+        function scrollCarrusel(direccion) {
+            const carrusel = document.getElementById('carruselBurgers');
+            const scrollAmount = 360; 
+            carrusel.scrollBy({ left: direccion * scrollAmount, behavior: 'smooth' });
+        }
+
+        // Efecto 3D de inclinación en el Card Destacado
+        function tiltCard(e) {
+            const card = document.getElementById('card3D');
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = ((y - centerY) / centerY) * -10;
+            const rotateY = ((x - centerX) / centerX) * 10;
+            
+            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.01)`;
+        }
+
+        function resetCard() {
+            const card = document.getElementById('card3D');
+            card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+        }
+
+        // Votar por una hamburguesa
+        let yaVotoMes = false;
+        function votarPorBurger(nombreBurger) {
+            if (yaVotoMes) {
+                alert(`⚠️ Ya has utilizado tu único voto este mes.\nRecuerda que las reglas de Secret Bite protegen la exclusividad con 1 voto por cuenta.`);
+                return;
+            }
+            yaVotoMes = true;
+            alert(`🎉 ¡Tu voto por "${nombreBurger}" ha sido registrado con éxito!\nHas sumado +5 Puntos Secret Bite a tu cuenta.`);
+            
+            // Actualizar puntos
+            const puntosElem = document.getElementById('headerPuntos');
+            puntosElem.innerText = parseInt(puntosElem.innerText) + 5;
+        }
+
+        // Gestión del Modal de Reserva
+        let modalPrecioUnitario = 28000;
+        let modalCantidadActual = 1;
+        let burgerSeleccionada = "La Burger Explosiva";
+
+        function abrirModalReserva(nombre, precio, imgUrl, desc) {
+            burgerSeleccionada = nombre;
+            modalPrecioUnitario = precio;
+            modalCantidadActual = 1;
+
+            document.getElementById('modalBurgerNombre').innerText = nombre;
+            document.getElementById('modalBurgerDesc').innerText = desc;
+            document.getElementById('modalBurgerPrecioUnit').innerText = `$${precio.toLocaleString()} COP`;
+            document.getElementById('modalBurgerImg').src = imgUrl;
+            document.getElementById('modalCantidad').innerText = '1';
+
+            calcularTotalModal();
+            document.getElementById('modalReserva').classList.remove('hidden');
+        }
+
+        function cerrarModalReserva() {
+            document.getElementById('modalReserva').classList.add('hidden');
+        }
+
+        function ajustarCantidadModal(delta) {
+            modalCantidadActual += delta;
+            if (modalCantidadActual < 1) modalCantidadActual = 1;
+            if (modalCantidadActual > 8) modalCantidadActual = 8; // Límite por lote
+            document.getElementById('modalCantidad').innerText = modalCantidadActual;
+            calcularTotalModal();
+        }
+
+        function calcularTotalModal() {
+            let subtotal = modalPrecioUnitario * modalCantidadActual;
+            const usarPuntos = document.getElementById('modalUsarPuntos').checked;
+            const badgeAhorro = document.getElementById('modalAhorroBadge');
+            
+            let descuento = 0;
+            if (usarPuntos) {
+                descuento = Math.round(subtotal * 0.15); // 15% de descuento
+                badgeAhorro.classList.remove('hidden');
+                badgeAhorro.innerText = `- $${descuento.toLocaleString()} COP`;
+            } else {
+                badgeAhorro.classList.add('hidden');
+            }
+
+            const total = subtotal - descuento;
+            document.getElementById('modalTotalPagar').innerText = `$${total.toLocaleString()} COP`;
+        }
+
+        function confirmarReservaFinal() {
+            alert(`🚀 ¡Reserva Confirmada con Éxito!\n----------------------------------------\nPlato: ${burgerSeleccionada} x ${modalCantidadActual} combos.\nIncluye: Papas rústicas + Bebidas frías.\nTu pedido ha entrado en la comanda de la Dark Kitchen.`);
+            cerrarModalReserva();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+# 🍔 Proyecto: Plataforma de Votación y Catálogo - Hamburguesería "Burger Month"
+
+## 📖 Descripción General
+Este proyecto es una aplicación web para una hamburguesería que implementa un modelo de negocio dinámico: **El menú cambia cada mes basándose en la votación del público.** 
+
+Días antes de iniciar el mes, se publican varias opciones de hamburguesas candidatas. Los usuarios votan por su favorita, y la ganadora se convierte en el producto destacado (o exclusivo) del mes siguiente. 
+
+Esta plataforma debe gestionar todo el ciclo de vida: desde la publicación de candidatas (por parte de los administradores), la ventana de votación (para los clientes), hasta la exhibición del catálogo ganador.
+
+## 🎯 Objetivos Principales
+1. **Sistema de Votación Transparente:** Permitir a los usuarios votar de forma segura, garantizando un solo voto por usuario registrado por campaña.
+2. **Catálogo Dinámico:** Mostrar las opciones actuales, el tiempo restante de votación y la ganadora del mes.
+3. **Panel de Administración (Backoffice):** Permitir a los dueños gestionar las campañas, ver estadísticas en tiempo real y actualizar el contenido.
+4. **Escalabilidad:** Soportar picos de tráfico en las horas finales de cada votación.
+
+---
+
+## 🏗️ Arquitectura Propuesta (High-Level)
+
+*Esta es una propuesta inicial, abierta a discusión según las decisiones técnicas del equipo de arquitectura.*
+
+*   **Frontend (Cliente):** Aplicación SPA orientada a móviles (Mobile-First), ligera y rápida. (Ej. React, Vue, Svelte).
+*   **Frontend (Admin):** Panel de control protegido. Puede ser parte de la misma SPA o un proyecto separado.
+*   **Backend:** API RESTful (Ej. Node.js/Express, Python/FastAPI, Java/Spring Boot) que maneje la lógica de negocio, autenticación y concurrencia.
+*   **Base de Datos:**
+    *   *Relacional (PostgreSQL/MySQL):* Para usuarios, roles, campañas y catálogo.
+    *   *Cache/In-Memory (Redis):* Para manejar los contadores de votos en tiempo real y evitar saturar la base de datos principal durante los picos de concurrencia.
+
+---
+
+## 📝 Requerimientos Principales (MVP)
+
+### 👤 Módulo Usuarios (Clientes)
+- [ ] Registro e inicio de sesión (Recomendado: Social Login - Google/Apple para menor fricción).
+- [ ] Visualización del menú mensual (ganadora actual) y opciones candidatas del próximo mes.
+- [ ] Emisión de voto (Restricción: 1 voto por usuario por campaña).
+- [ ] Visualización de cuenta regresiva para el cierre de votaciones.
+
+### 🛡️ Módulo Administración
+- [ ] Autenticación con rol de Administrador.
+- [ ] CRUD de "Hamburguesas" (Nombre, descripción, ingredientes, foto).
+- [ ] Gestión de "Campañas Mensuales" (Fecha inicio/fin, selección de candidatas).
+- [ ] Dashboard con estadísticas de votación en tiempo real.
+
+### ⚙️ Requerimientos No Funcionales (Críticos)
+- **Seguridad:** Prevención de fraude en votaciones (validación de tokens JWT, limitación de peticiones por IP/Usuario).
+- **Concurrencia:** Diseño de base de datos o sistema de colas/caché que soporte múltiples votos simultáneos en los últimos minutos de la campaña sin pérdida de datos (Race Conditions).
+
+---
+
+## 🧪 Casos de Uso (CU) Clave
+
+*   **CU-01:** Cliente se registra e inicia sesión.
+*   **CU-02:** Cliente emite voto en campaña activa.
+*   **CU-03:** Admin crea nueva campaña y asigna 3 hamburguesas candidatas.
+*   **CU-04:** Sistema cierra campaña automáticamente en la fecha límite y publica resultados.
+
+---
+
+## 🚦 Primeros Test Cases (TC) a Considerar
+- **TC-01 (Límites de tiempo):** Verificar que el sistema rechace un voto emitido un segundo después del cierre oficial de la campaña.
+- **TC-02 (Concurrencia/Fraude):** Simular el envío simultáneo de 10 votos con el mismo token de usuario; verificar que la base de datos registre solo 1.
+- **TC-03 (Roles):** Intentar acceder a la ruta de creación de campañas con un token JWT de un usuario normal (Cliente). Debe devolver error `403 Forbidden`.
+
+---
+
+## 🚀 Próximos Pasos para el Equipo
+1. **Definir Stack Tecnológico** oficial.
+2. **Diseñar Modelo Entidad-Relación (ER)** de la base de datos.
+3. **Diseñar Wireframes/Figma** del flujo de usuario (Mobile First).
+4. **Levantar Entorno de Desarrollo** (Repositorios, CI/CD básico, Linter).

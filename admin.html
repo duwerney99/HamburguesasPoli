@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Bite - Panel Administrativo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                                                primary: {
+                            50: '#FFF1F2', 
+                            100: '#FFE4E6', 
+                            400: '#FB7185',
+                            500: '#F43F5E',
+                            600: '#E11D48', 
+                            700: '#BE123C', 
+                            800: '#9F1239',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glow-primary-sm {
+            box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.2);
+        }
+        /* Ocultar barra de scroll pero permitir deslizamiento */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex selection:bg-primary-500 selection:text-gray-950">
+
+    <!-- BARRA LATERAL (SIDEBAR DE NAVEGACIÓN) -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 border-r border-gray-800 flex flex-col justify-between transition-transform duration-300 -translate-x-full lg:translate-x-0">
+        
+        <!-- Parte Superior: Logo e Identidad -->
+        <div>
+            <div class="h-16 px-6 border-b border-gray-800 flex items-center justify-between">
+                <a href="admin.html" class="flex items-center space-x-3">
+                    <span class="bg-gray-900 border border-gray-700/80 text-white font-black px-2.5 py-1 rounded-xl text-base tracking-wider shadow-sm flex items-center gap-1">
+                        <span>SB</span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary-400"></span>
+                    </span>
+                    <div>
+                        <span class="font-extrabold text-base tracking-tight text-white block leading-none">Secret Bite</span>
+                        <span class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Kitchen Admin OS</span>
+                    </div>
+                </a>
+                <!-- Botón cerrar en móvil -->
+                <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Estatus de Cocina -->
+            <div class="px-4 py-3 border-b border-gray-800/60 bg-gray-950/40">
+                <div class="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl px-3 py-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                        <span class="text-xs font-bold text-gray-200">Cocina Activa</span>
+                    </div>
+                    <span class="text-[10px] bg-green-500/10 text-green-400 font-bold px-2 py-0.5 rounded-full border border-green-500/20">Recibiendo</span>
+                </div>
+            </div>
+
+            <!-- Menú de Enlaces de Navegación por Pestañas -->
+            <nav class="px-3 py-4 space-y-1">
+                
+                <!-- 1. Visión General -->
+                <button onclick="cambiarPestana('visionGeneral', this)" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/10 text-white font-bold text-xs border border-white/10 transition">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-chart-pie text-sm"></i>
+                        <span>Visión General</span>
+                    </div>
+                    <span class="nav-dot w-1.5 h-1.5 rounded-full bg-primary-400"></span>
+                </button>
+
+                <!-- 2. Menú de Usuarios y Roles -->
+                <button onclick="cambiarPestana('usuarios', this)" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 font-semibold text-xs transition">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-user-shield text-sm"></i>
+                        <span>Usuarios & Roles</span>
+                    </div>
+                    <span class="bg-gray-800 text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-full">4</span>
+                </button>
+
+                <!-- 3. Clientes Registrados & Votos -->
+                <button onclick="cambiarPestana('clientes', this)" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 font-semibold text-xs transition">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-check-to-slot text-sm"></i>
+                        <span>Clientes & Votantes</span>
+                    </div>
+                    <span class="text-[10px] text-gray-300 font-bold bg-white/5 px-2 py-0.5 rounded-full border border-white/10">340 VIP</span>
+                </button>
+
+                <!-- 4. Menú de Hamburguesas -->
+                <button onclick="cambiarPestana('menu', this)" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 font-semibold text-xs transition">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-burger text-sm"></i>
+                        <span>Menú & Prototipos</span>
+                    </div>
+                    <span class="bg-gray-800 text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-full">5</span>
+                </button>
+
+                <!-- 5. Menú de Puntos y Reclamo de Hamburguesas -->
+                <button onclick="cambiarPestana('puntos', this)" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 font-semibold text-xs transition">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-coins text-sm text-gray-400"></i>
+                        <span>Sistema de Puntos</span>
+                    </div>
+                    <span class="text-[10px] text-gray-400 font-semibold">Canjes</span>
+                </button>
+
+                <!-- 6. Pedidos & Reservas Activas -->
+                <button onclick="cambiarPestana('pedidos', this)" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 font-semibold text-xs transition">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-receipt text-sm"></i>
+                        <span>Pedidos & Comandas</span>
+                    </div>
+                    <span class="bg-white/10 text-gray-200 font-bold text-[10px] px-2 py-0.5 rounded-full">5</span>
+                </button>
+
+            </nav>
+        </div>
+
+        <!-- Parte Inferior: Perfil y Enlace a Tienda Pública -->
+        <div class="p-4 border-t border-gray-800 space-y-3 bg-gray-950/50">
+            <!-- Enlace para volver a la tienda del cliente -->
+            <a href="index.html" class="flex items-center justify-center space-x-2 w-full py-2 px-3 rounded-xl bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold border border-gray-700/60 transition">
+                <i class="fa-solid fa-arrow-up-right-from-square text-gray-400 text-xs"></i>
+                <span>Ver Tienda Pública</span>
+            </a>
+
+            <!-- Perfil del Admin -->
+            <div class="flex items-center space-x-3 pt-1">
+                <div class="w-9 h-9 rounded-xl bg-gray-800 border border-gray-700 text-white font-bold flex items-center justify-center text-xs">
+                    CM
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-white truncate">Chef Mario</p>
+                    <p class="text-[10px] text-gray-400 truncate">Admin General Cocina</p>
+                </div>
+                <a href="login.html" title="Cerrar sesión" class="text-gray-500 hover:text-red-400 transition text-sm">
+                    <i class="fa-solid fa-power-off"></i>
+                </a>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- OVERLAY EN MÓVIL AL ABRIR SIDEBAR -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden lg:hidden"></div>
+
+    <!-- CONTENEDOR PRINCIPAL DERECHO -->
+    <div class="flex-1 lg:ml-64 flex flex-col min-h-screen">
+        
+        <!-- HEADER SUPERIOR -->
+        <header class="h-16 bg-gray-950/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-30 px-4 sm:px-8 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <!-- Botón hamburguesa móvil -->
+                <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-white p-1">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <div>
+                    <h1 id="headerTitulo" class="text-base sm:text-lg font-black text-white tracking-tight">Centro de Control Secret Bite</h1>
+                    <p id="headerSubtitulo" class="text-[11px] text-gray-400 hidden sm:block">Monitoreo en tiempo real de producción, votación y reservas</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <!-- Buscador Rápido -->
+                <div class="relative hidden md:block">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
+                    <input 
+                        type="text" 
+                        placeholder="Buscar por usuario, burger o comanda..." 
+                        class="bg-gray-900 border border-gray-800 text-white text-xs rounded-xl pl-9 pr-3 py-2 w-56 focus:w-64 focus:outline-none focus:border-primary-500 transition-all placeholder-gray-600"
+                    >
+                </div>
+
+                <!-- Botón Notificaciones -->
+                <button onclick="alert('Tienes 3 notificaciones nuevas:\n- 1 nuevo pedido recibido (#SB-1049)\n- 2 nuevos votos para La Burger Explosiva\n- 1 canje de 80 puntos por hamburguesa gratis')" class="relative p-2 rounded-xl bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-bell text-sm"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary-500"></span>
+                </button>
+
+                <!-- Botón Acción Rápida -->
+                <button onclick="abrirModalNuevaBurger()" class="bg-primary-500 hover:bg-primary-400 text-gray-950 font-black px-3.5 py-2 rounded-xl text-xs flex items-center space-x-1.5 shadow-lg shadow-primary-500/20 transition">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span class="hidden sm:inline">Nueva Hamburguesa</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENIDO PRINCIPAL POR PESTAÑAS -->
+        <main class="flex-1 p-4 sm:p-8 space-y-8 max-w-7xl w-full mx-auto">
+            
+            <!-- ============================================================== -->
+            <!-- PESTAÑA 1: VISIÓN GENERAL (DASHBOARD GENERAL) -->
+            <!-- ============================================================== -->
+            <div id="tab-visionGeneral" class="tab-content space-y-8">
+                
+                <!-- TARJETAS DE MÉTRICAS KPI -->
+                <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                    
+                    <!-- KPI 1: Ingresos -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 relative overflow-hidden group hover:border-gray-700 transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold text-gray-400">Ingresos del Mes</span>
+                            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-wallet"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-white">$8.450.000 <span class="text-xs font-semibold text-gray-400">COP</span></div>
+                        <div class="mt-2 flex items-center text-[11px] text-green-400 font-semibold space-x-1">
+                            <i class="fa-solid fa-arrow-trend-up"></i>
+                            <span>+18.4% vs mes anterior</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 2: Pedidos Activos -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 relative overflow-hidden group hover:border-gray-700 transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold text-gray-400">Reservas Activas Hoy</span>
+                            <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-fire-burner"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-white">42 <span class="text-xs font-semibold text-gray-400">combos</span></div>
+                        <div class="mt-2 flex items-center text-[11px] text-gray-300 font-semibold space-x-1">
+                            <i class="fa-solid fa-clock text-primary-400"></i>
+                            <span>12 en cocina activa ahora</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 3: Votación Hamburguesa del Mes -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 relative overflow-hidden group hover:border-gray-700 transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold text-gray-400">Meta Hamburguesa Mes</span>
+                            <div class="w-8 h-8 rounded-xl bg-white/10 text-white flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-trophy"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-white">38 <span class="text-xs font-semibold text-gray-400">/ 50 votos</span></div>
+                        <div class="mt-2.5 w-full bg-gray-950 h-2 rounded-full overflow-hidden">
+                            <div class="bg-primary-400 h-full rounded-full" style="width: 76%"></div>
+                        </div>
+                        <div class="mt-1 text-right text-[10px] text-gray-400 font-bold">76% para entrar a producción</div>
+                    </div>
+
+                    <!-- KPI 4: Clientes Fidelizados -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 relative overflow-hidden group hover:border-gray-700 transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold text-gray-400">Clientes VIP / Puntos</span>
+                            <div class="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-400 flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-coins"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-white">340 <span class="text-xs font-semibold text-gray-400">socios</span></div>
+                        <div class="mt-2 flex items-center text-[11px] text-green-400 font-semibold space-x-1">
+                            <i class="fa-solid fa-tag"></i>
+                            <span>85 canjes con descuento</span>
+                        </div>
+                    </div>
+
+                </section>
+
+                <!-- ACCESOS DIRECTOS A LAS NUEVAS SECCIONES -->
+                <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <button onclick="cambiarPestana('usuarios')" class="p-4 bg-gray-900/90 border border-gray-800 hover:border-gray-700 rounded-2xl text-left transition flex items-center space-x-3.5 group">
+                        <div class="w-11 h-11 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-lg group-hover:scale-110 transition">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-xs group-hover:text-white transition">Usuarios y Roles</h4>
+                            <p class="text-[11px] text-gray-400">4 administradores y chefs</p>
+                        </div>
+                    </button>
+
+                    <button onclick="cambiarPestana('clientes')" class="p-4 bg-gray-900/90 border border-gray-800 hover:border-gray-700 rounded-2xl text-left transition flex items-center space-x-3.5 group">
+                        <div class="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg group-hover:scale-110 transition">
+                            <i class="fa-solid fa-check-to-slot"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-xs group-hover:text-white transition">Clientes Votantes</h4>
+                            <p class="text-[11px] text-gray-400">340 registrados con votos</p>
+                        </div>
+                    </button>
+
+                    <button onclick="cambiarPestana('menu')" class="p-4 bg-gray-900/90 border border-gray-800 hover:border-gray-700 rounded-2xl text-left transition flex items-center space-x-3.5 group">
+                        <div class="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center text-lg group-hover:scale-110 transition">
+                            <i class="fa-solid fa-burger"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-xs group-hover:text-white transition">Menú & Recetas</h4>
+                            <p class="text-[11px] text-gray-400">5 hamburguesas activas</p>
+                        </div>
+                    </button>
+
+                    <button onclick="cambiarPestana('puntos')" class="p-4 bg-gray-900/90 border border-gray-800 hover:border-gray-700 rounded-2xl text-left transition flex items-center space-x-3.5 group">
+                        <div class="w-11 h-11 rounded-xl bg-green-500/10 text-green-400 flex items-center justify-center text-lg group-hover:scale-110 transition">
+                            <i class="fa-solid fa-coins"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-xs group-hover:text-white transition">Sistema de Puntos</h4>
+                            <p class="text-[11px] text-gray-400">Canjes por burgers gratis</p>
+                        </div>
+                    </button>
+                </section>
+
+                <!-- RESUMEN DE LA BATALLA DE HAMBURGUESAS -->
+                <section class="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-7 shadow-xl space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <div class="inline-flex items-center space-x-2 bg-gray-800 border border-gray-700 text-gray-200 px-3 py-1 rounded-full text-xs font-semibold mb-1.5">
+                                <i class="fa-solid fa-stopwatch text-primary-400"></i>
+                                <span>Ventana Activa • Faltan 4 días para cierre</span>
+                            </div>
+                            <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Batalla de Hamburguesas del Mes</h2>
+                            <p class="text-xs text-gray-400">La creación que supere los 50 votos se producirá de manera prioritaria en lote de 100 unidades.</p>
+                        </div>
+                        <button onclick="cambiarPestana('menu')" class="bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-700 px-4 py-2.5 rounded-xl text-xs transition">
+                            Ver Todas las Recetas
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Card 1 -->
+                        <div class="bg-gray-950/80 border border-primary-500/50 rounded-2xl p-4 flex flex-col justify-between relative shadow-lg">
+                            <div class="absolute -top-2.5 right-3 bg-primary-500 text-gray-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">#1 Ganadora</div>
+                            <div>
+                                <div class="flex items-center space-x-3 mb-3">
+                                    <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=200&q=80" alt="La Burger Explosiva" class="w-12 h-12 rounded-xl object-cover border border-gray-800">
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">La Burger Explosiva</h4>
+                                        <span class="text-white font-extrabold text-xs">$28.000 COP</span>
+                                    </div>
+                                </div>
+                                <p class="text-[11px] text-gray-400 mb-3">Carne madurada 30 días, doble cheddar ahumado y salsa secreta.</p>
+                            </div>
+                            <div class="space-y-1.5 pt-2 border-t border-gray-800">
+                                <div class="flex justify-between text-xs font-bold">
+                                    <span class="text-white">38 Votos</span>
+                                    <span class="text-gray-400">76% meta</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-primary-400 h-full rounded-full" style="width: 76%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 -->
+                        <div class="bg-gray-950/80 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between hover:border-gray-700 transition">
+                            <div>
+                                <div class="flex items-center space-x-3 mb-3">
+                                    <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=200&q=80" alt="BBQ Crunch" class="w-12 h-12 rounded-xl object-cover border border-gray-800">
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">BBQ Crunch</h4>
+                                        <span class="text-white font-extrabold text-xs">$26.000 COP</span>
+                                    </div>
+                                </div>
+                                <p class="text-[11px] text-gray-400 mb-3">Aros de cebolla empanizados, queso pepper jack y salsa artesanal.</p>
+                            </div>
+                            <div class="space-y-1.5 pt-2 border-t border-gray-800">
+                                <div class="flex justify-between text-xs font-bold">
+                                    <span class="text-gray-300">29 Votos</span>
+                                    <span class="text-gray-500">58% meta</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-gray-600 h-full rounded-full" style="width: 58%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3 -->
+                        <div class="bg-gray-950/80 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between hover:border-gray-700 transition">
+                            <div>
+                                <div class="flex items-center space-x-3 mb-3">
+                                    <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=200&q=80" alt="Truffle Mushroom" class="w-12 h-12 rounded-xl object-cover border border-gray-800">
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">Truffle Mushroom</h4>
+                                        <span class="text-white font-extrabold text-xs">$30.000 COP</span>
+                                    </div>
+                                </div>
+                                <p class="text-[11px] text-gray-400 mb-3">Hongos portobello al vino blanco y crema suave de trufa negra.</p>
+                            </div>
+                            <div class="space-y-1.5 pt-2 border-t border-gray-800">
+                                <div class="flex justify-between text-xs font-bold">
+                                    <span class="text-gray-300">19 Votos</span>
+                                    <span class="text-gray-500">38% meta</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-gray-600 h-full rounded-full" style="width: 38%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 4 -->
+                        <div class="bg-gray-950/80 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between hover:border-gray-700 transition">
+                            <div>
+                                <div class="flex items-center space-x-3 mb-3">
+                                    <img src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&w=200&q=80" alt="Spicy Jalapeño" class="w-12 h-12 rounded-xl object-cover border border-gray-800">
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">Spicy Jalapeño</h4>
+                                        <span class="text-white font-extrabold text-xs">$27.000 COP</span>
+                                    </div>
+                                </div>
+                                <p class="text-[11px] text-gray-400 mb-3">Jalapeños en tempura crujiente y mermelada de tocino ahumada.</p>
+                            </div>
+                            <div class="space-y-1.5 pt-2 border-t border-gray-800">
+                                <div class="flex justify-between text-xs font-bold">
+                                    <span class="text-gray-300">12 Votos</span>
+                                    <span class="text-gray-500">24% meta</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-gray-600 h-full rounded-full" style="width: 24%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- PESTAÑA 2: USUARIOS REGISTRADOS CON ROLES -->
+            <!-- ============================================================== -->
+            <div id="tab-usuarios" class="tab-content hidden space-y-6">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Usuarios & Roles del Sistema</h2>
+                        <p class="text-xs text-gray-400">Control de accesos y permisos administrativos para el personal de la Dark Kitchen.</p>
+                    </div>
+                    <button onclick="abrirModalNuevoUsuario()" class="bg-primary-500 hover:bg-primary-400 text-gray-950 font-black px-4 py-2.5 rounded-xl text-xs flex items-center space-x-2 transition shadow-lg shadow-primary-500/20">
+                        <i class="fa-solid fa-user-plus text-xs"></i>
+                        <span>Nuevo Usuario con Rol</span>
+                    </button>
+                </div>
+
+                <!-- Tabla de Usuarios con Roles -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Plantilla del Sistema (4 Usuarios Activos)</span>
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span class="text-gray-500">Filtrar por rol:</span>
+                            <select onchange="filtrarUsuariosPorRol(this.value)" class="bg-gray-950 border border-gray-800 text-gray-300 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-gray-600">
+                                <option value="todos">Todos los Roles</option>
+                                <option value="admin">Administrador Master</option>
+                                <option value="chef">Chef de Cocina</option>
+                                <option value="menu">Gestor de Menú</option>
+                                <option value="despacho">Logística & Despacho</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                                    <th class="py-3 px-4">Usuario / Nombre</th>
+                                    <th class="py-3 px-4">Correo Electrónico</th>
+                                    <th class="py-3 px-4">Rol Asignado</th>
+                                    <th class="py-3 px-4">Nivel de Permisos</th>
+                                    <th class="py-3 px-4">Último Acceso</th>
+                                    <th class="py-3 px-4">Estado</th>
+                                    <th class="py-3 px-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuariosTableBody" class="divide-y divide-gray-800/60">
+                                
+                                <!-- Usuario 1: Admin Master -->
+                                <tr class="hover:bg-gray-950/50 transition user-row" data-rol="admin">
+                                    <td class="py-3.5 px-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 font-black flex items-center justify-center text-xs border border-purple-500/30">
+                                                CM
+                                            </div>
+                                            <div>
+                                                <span class="font-bold text-white block">Chef Mario Restrepo</span>
+                                                <span class="text-[10px] text-gray-400">Creador Principal</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-mono text-[11px]">admin@secretbite.com</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-crown text-[9px]"></i> Super Administrador
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-medium">Control Total (Cocina, Finanzas, Usuarios)</td>
+                                    <td class="py-3.5 px-4 text-gray-400">Hace 5 min (Sesión actual)</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">Activo</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="editarUsuario('Chef Mario Restrepo', 'Super Administrador')" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" title="Editar">
+                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Usuario 2: Chef de Cocina -->
+                                <tr class="hover:bg-gray-950/50 transition user-row" data-rol="chef">
+                                    <td class="py-3.5 px-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-9 h-9 rounded-xl bg-orange-500/20 text-orange-300 font-black flex items-center justify-center text-xs border border-orange-500/30">
+                                                GA
+                                            </div>
+                                            <div>
+                                                <span class="font-bold text-white block">Gustavo Arias</span>
+                                                <span class="text-[10px] text-gray-400">Jefe de Parrilla</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-mono text-[11px]">gustavo.cocina@secretbite.com</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="bg-orange-500/15 text-orange-400 border border-orange-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-fire-burner text-[9px]"></i> Chef Ejecutivo
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-medium">Gestión de Comandas, Stock & Recetas</td>
+                                    <td class="py-3.5 px-4 text-gray-400">Hoy a las 6:15 PM</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">Activo</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="editarUsuario('Gustavo Arias', 'Chef Ejecutivo')" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" title="Editar">
+                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                        </button>
+                                        <button onclick="toggleEstadoUsuario(this)" class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/30 text-gray-400 hover:text-red-400 transition" title="Bloquear / Desactivar">
+                                            <i class="fa-solid fa-user-lock text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Usuario 3: Gestor de Menú -->
+                                <tr class="hover:bg-gray-950/50 transition user-row" data-rol="menu">
+                                    <td class="py-3.5 px-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-300 font-black flex items-center justify-center text-xs border border-blue-500/30">
+                                                LG
+                                            </div>
+                                            <div>
+                                                <span class="font-bold text-white block">Lorena Gómez</span>
+                                                <span class="text-[10px] text-gray-400">Coordinadora Gastronómica</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-mono text-[11px]">lorena.menu@secretbite.com</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-burger text-[9px]"></i> Gestor de Menú
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-medium">Creación de Hamburguesas & Votaciones</td>
+                                    <td class="py-3.5 px-4 text-gray-400">Ayer a las 8:40 PM</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">Activo</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="editarUsuario('Lorena Gómez', 'Gestor de Menú')" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" title="Editar">
+                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                        </button>
+                                        <button onclick="toggleEstadoUsuario(this)" class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/30 text-gray-400 hover:text-red-400 transition" title="Bloquear / Desactivar">
+                                            <i class="fa-solid fa-user-lock text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Usuario 4: Despacho & Logística -->
+                                <tr class="hover:bg-gray-950/50 transition user-row" data-rol="despacho">
+                                    <td class="py-3.5 px-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-300 font-black flex items-center justify-center text-xs border border-teal-500/30">
+                                                CR
+                                            </div>
+                                            <div>
+                                                <span class="font-bold text-white block">Camilo Rueda</span>
+                                                <span class="text-[10px] text-gray-400">Supervisor de Envíos</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-mono text-[11px]">camilo.logistica@secretbite.com</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="bg-teal-500/15 text-teal-400 border border-teal-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-motorcycle text-[9px]"></i> Logística & Despacho
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-medium">Marcado de Pedidos Listos e Impresión Térmica</td>
+                                    <td class="py-3.5 px-4 text-gray-400">Hace 3 horas</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">Activo</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="editarUsuario('Camilo Rueda', 'Logística & Despacho')" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition" title="Editar">
+                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                        </button>
+                                        <button onclick="toggleEstadoUsuario(this)" class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/30 text-gray-400 hover:text-red-400 transition" title="Bloquear / Desactivar">
+                                            <i class="fa-solid fa-user-lock text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- PESTAÑA 3: CLIENTES REGISTRADOS PARA LOS VOTOS -->
+            <!-- ============================================================== -->
+            <div id="tab-clientes" class="tab-content hidden space-y-6">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Clientes Registrados & Votos del Mes</h2>
+                        <p class="text-xs text-gray-400">Supervisión en vivo de los miembros del Club Secret Bite que participan en las votaciones.</p>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        <button onclick="alert('Enviando recordatorio por WhatsApp a los 78 miembros que aún no han votado este mes...')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold px-3.5 py-2.5 rounded-xl text-xs transition flex items-center space-x-1.5">
+                            <i class="fa-brands fa-whatsapp text-green-400 text-sm"></i>
+                            <span>Recordar a No Votantes</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Métricas de Participación -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-400 font-semibold block">Total Miembros Registrados</span>
+                            <span class="text-2xl font-black text-white">340 Clientes</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-green-500/10 text-green-400 flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-check-to-slot"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-400 font-semibold block">Votos Emitidos este Mes</span>
+                            <span class="text-2xl font-black text-white">98 Votos (76%)</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-coins"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-400 font-semibold block">Puntos Acumulados en Circulación</span>
+                            <span class="text-2xl font-black text-white">12.450 Puntos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Clientes Votantes -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Padrón de Votantes VIP</span>
+                        
+                        <!-- Filtros de Votación -->
+                        <div class="flex items-center space-x-1 bg-gray-950 p-1 rounded-xl border border-gray-800">
+                            <button onclick="filtrarClientesVoto('todos', this)" class="filtro-voto-btn px-3 py-1 rounded-lg text-xs font-bold bg-white text-gray-950 transition">
+                                Todos (6)
+                            </button>
+                            <button onclick="filtrarClientesVoto('si', this)" class="filtro-voto-btn px-3 py-1 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                                Ya Votaron (4)
+                            </button>
+                            <button onclick="filtrarClientesVoto('no', this)" class="filtro-voto-btn px-3 py-1 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                                Pendientes (2)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                                    <th class="py-3 px-4">Cliente / Contacto</th>
+                                    <th class="py-3 px-4">WhatsApp</th>
+                                    <th class="py-3 px-4">Hamburguesa Votada</th>
+                                    <th class="py-3 px-4">Fecha de Voto</th>
+                                    <th class="py-3 px-4 text-center">Puntos Actuales</th>
+                                    <th class="py-3 px-4 text-center">Nivel VIP</th>
+                                    <th class="py-3 px-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientesTableBody" class="divide-y divide-gray-800/60">
+                                
+                                <!-- Cliente 1 -->
+                                <tr class="hover:bg-gray-950/50 transition cliente-row" data-voto="si">
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-bold text-white">Andrés Salazar</div>
+                                        <span class="text-[10px] text-gray-400">andres.salazar@gmail.com</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-mono text-gray-300">
+                                        <a href="https://wa.me/573001234567" target="_blank" class="hover:text-green-400 transition flex items-center gap-1">
+                                            <i class="fa-brands fa-whatsapp text-green-500"></i> +57 300 123 4567
+                                        </a>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="font-bold text-white bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
+                                            🏆 La Burger Explosiva
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-400">08/09/2026 14:20</td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-gray-200 text-sm">30 pts</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="bg-primary-500/10 text-primary-300 font-bold px-2 py-0.5 rounded-full text-[10px] border border-primary-500/20">Oro VIP</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="bonificarPuntos('Andrés Salazar')" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition" title="Otorgar puntos extra">
+                                            <i class="fa-solid fa-coins text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Cliente 2 -->
+                                <tr class="hover:bg-gray-950/50 transition cliente-row" data-voto="si">
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-bold text-white">Mariana Gómez</div>
+                                        <span class="text-[10px] text-gray-400">mariana.gomez@secretbite.com</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-mono text-gray-300">
+                                        <a href="https://wa.me/573129876543" target="_blank" class="hover:text-green-400 transition flex items-center gap-1">
+                                            <i class="fa-brands fa-whatsapp text-green-500"></i> +57 312 987 6543
+                                        </a>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="font-bold text-gray-200 bg-gray-800 px-2.5 py-1 rounded-lg border border-gray-700">
+                                            BBQ Crunch Supreme
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-400">09/09/2026 19:10</td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-gray-200 text-sm">50 pts</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="bg-purple-500/20 text-purple-300 font-bold px-2 py-0.5 rounded-full text-[10px]">Platino VIP</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="bonificarPuntos('Mariana Gómez')" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition" title="Otorgar puntos extra">
+                                            <i class="fa-solid fa-coins text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Cliente 3 -->
+                                <tr class="hover:bg-gray-950/50 transition cliente-row" data-voto="si">
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-bold text-white">Camila Restrepo</div>
+                                        <span class="text-[10px] text-gray-400">camila.r@outlook.com</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-mono text-gray-300">
+                                        <a href="https://wa.me/573155551234" target="_blank" class="hover:text-green-400 transition flex items-center gap-1">
+                                            <i class="fa-brands fa-whatsapp text-green-500"></i> +57 315 555 1234
+                                        </a>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
+                                            Truffle Mushroom
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-400">07/09/2026 21:05</td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-gray-200 text-sm">85 pts</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="bg-yellow-500/20 text-yellow-300 font-bold px-2 py-0.5 rounded-full text-[10px]">Leyenda</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="bonificarPuntos('Camila Restrepo')" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition" title="Otorgar puntos extra">
+                                            <i class="fa-solid fa-coins text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Cliente 4 -->
+                                <tr class="hover:bg-gray-950/50 transition cliente-row" data-voto="si">
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-bold text-white">Felipe Cárdenas</div>
+                                        <span class="text-[10px] text-gray-400">felipe.c@gmail.com</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-mono text-gray-300">
+                                        <a href="https://wa.me/573204449876" target="_blank" class="hover:text-green-400 transition flex items-center gap-1">
+                                            <i class="fa-brands fa-whatsapp text-green-500"></i> +57 320 444 9876
+                                        </a>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="font-bold text-white bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
+                                            🏆 La Burger Explosiva
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-400">09/09/2026 12:30</td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-gray-200 text-sm">20 pts</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="bg-gray-800 text-gray-300 font-bold px-2 py-0.5 rounded-full text-[10px]">Plata</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="bonificarPuntos('Felipe Cárdenas')" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition" title="Otorgar puntos extra">
+                                            <i class="fa-solid fa-coins text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Cliente 5 (Pendiente) -->
+                                <tr class="hover:bg-gray-950/50 transition cliente-row" data-voto="no">
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-bold text-white">Valeria Mendoza</div>
+                                        <span class="text-[10px] text-gray-400">valeria.m@yahoo.com</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-mono text-gray-300">
+                                        <a href="https://wa.me/573017772233" target="_blank" class="hover:text-green-400 transition flex items-center gap-1">
+                                            <i class="fa-brands fa-whatsapp text-green-500"></i> +57 301 777 2233
+                                        </a>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="font-semibold text-gray-500 italic bg-gray-950 px-2.5 py-1 rounded-lg border border-gray-800">
+                                            <i class="fa-solid fa-clock mr-1"></i> Aún no emite voto
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-500">--</td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-gray-200 text-sm">10 pts</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="bg-gray-800 text-gray-400 font-bold px-2 py-0.5 rounded-full text-[10px]">Bronce</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="enviarRecordatorio('Valeria Mendoza')" class="p-1.5 rounded-lg bg-green-900/40 hover:bg-green-600 text-green-400 hover:text-white transition" title="Enviar WhatsApp de aviso">
+                                            <i class="fa-brands fa-whatsapp text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Cliente 6 (Pendiente) -->
+                                <tr class="hover:bg-gray-950/50 transition cliente-row" data-voto="no">
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-bold text-white">Santiago Muñoz</div>
+                                        <span class="text-[10px] text-gray-400">santiago.m@gmail.com</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-mono text-gray-300">
+                                        <a href="https://wa.me/573183339900" target="_blank" class="hover:text-green-400 transition flex items-center gap-1">
+                                            <i class="fa-brands fa-whatsapp text-green-500"></i> +57 318 333 9900
+                                        </a>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="font-semibold text-gray-500 italic bg-gray-950 px-2.5 py-1 rounded-lg border border-gray-800">
+                                            <i class="fa-solid fa-clock mr-1"></i> Aún no emite voto
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-500">--</td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-gray-200 text-sm">15 pts</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="bg-gray-800 text-gray-400 font-bold px-2 py-0.5 rounded-full text-[10px]">Bronce</span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right space-x-1">
+                                        <button onclick="enviarRecordatorio('Santiago Muñoz')" class="p-1.5 rounded-lg bg-green-900/40 hover:bg-green-600 text-green-400 hover:text-white transition" title="Enviar WhatsApp de aviso">
+                                            <i class="fa-brands fa-whatsapp text-xs"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- PESTAÑA 4: MENÚ DE LAS HAMBURGUESAS (RECETAS & PROTOTIPOS) -->
+            <!-- ============================================================== -->
+            <div id="tab-menu" class="tab-content hidden space-y-6">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Catálogo de Hamburguesas & Recetas</h2>
+                        <p class="text-xs text-gray-400">Gestión de precios, costos de producción y disponibilidad de combos estandarizados.</p>
+                    </div>
+                    <button onclick="abrirModalNuevaBurger()" class="bg-primary-500 hover:bg-primary-400 text-gray-950 font-black px-4 py-2.5 rounded-xl text-xs flex items-center space-x-2 transition shadow-lg shadow-primary-500/20">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>Añadir Nueva Creación</span>
+                    </button>
+                </div>
+
+                <!-- Grid Completo de Hamburguesas con Fotos Reales -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Burger 1: La Burger Explosiva -->
+                    <div class="bg-gray-900 border border-primary-500/50 rounded-3xl p-5 space-y-4 shadow-xl relative">
+                        <div class="absolute top-3 right-3 bg-primary-500 text-gray-950 font-black text-[10px] px-3 py-1 rounded-full uppercase">
+                            Ganadora Activa
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80" alt="La Burger Explosiva" class="w-full h-44 rounded-2xl object-cover border border-gray-800">
+                        
+                        <div>
+                            <h3 class="text-lg font-black text-white">La Burger Explosiva</h3>
+                            <p class="text-xs text-gray-400 mt-1">Carne Angus 220g madurada 30 días, doble cheddar ahumado, bacon en maple y salsa secreta de trufa.</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 p-3 bg-gray-950 rounded-2xl border border-gray-800 text-xs">
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Precio Venta (COP):</span>
+                                <span class="text-base font-black text-white">$28.000</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Costo Insumos:</span>
+                                <span class="text-base font-bold text-gray-300">$11.200 <span class="text-[10px] text-green-400">(60% mgn)</span></span>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-xl text-[11px] text-green-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Combo Estandarizado: Papas rústicas + Gaseosa</span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-800">
+                            <span class="text-xs text-gray-400 font-bold"><i class="fa-solid fa-trophy text-primary-400 mr-1"></i> 38 Votos este mes</span>
+                            <div class="flex space-x-1.5">
+                                <button onclick="editarRecetaBurger('La Burger Explosiva', 28000)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold px-3 py-1.5 rounded-xl transition">
+                                    Editar
+                                </button>
+                                <button onclick="alert('Esta es la hamburguesa ganadora actualmente en producción.')" class="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-xl border border-emerald-500/20">
+                                    En Cocina
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Burger 2: BBQ Crunch Supreme -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4 shadow-xl relative">
+                        <div class="absolute top-3 right-3 bg-gray-800 text-gray-300 border border-gray-700 font-bold text-[10px] px-3 py-1 rounded-full uppercase">
+                            En Votación
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80" alt="BBQ Crunch Supreme" class="w-full h-44 rounded-2xl object-cover border border-gray-800">
+                        
+                        <div>
+                            <h3 class="text-lg font-black text-white">BBQ Crunch Supreme</h3>
+                            <p class="text-xs text-gray-400 mt-1">Aros de cebolla empanizados en panko crujiente, queso pepper jack y salsa BBQ con notas de Bourbon.</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 p-3 bg-gray-950 rounded-2xl border border-gray-800 text-xs">
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Precio Venta (COP):</span>
+                                <span class="text-base font-black text-white">$26.000</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Costo Insumos:</span>
+                                <span class="text-base font-bold text-gray-300">$10.000 <span class="text-[10px] text-green-400">(61% mgn)</span></span>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-xl text-[11px] text-green-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Combo Estandarizado: Papas rústicas + Gaseosa</span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-800">
+                            <span class="text-xs text-gray-400 font-bold"><i class="fa-solid fa-heart text-red-400 mr-1"></i> 29 Votos (58%)</span>
+                            <div class="flex space-x-1.5">
+                                <button onclick="editarRecetaBurger('BBQ Crunch Supreme', 26000)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold px-3 py-1.5 rounded-xl transition">
+                                    Editar
+                                </button>
+                                <button onclick="togglePausarBurger(this, 'BBQ Crunch Supreme')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-gray-700/60 transition">
+                                    Pausar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Burger 3: Truffle Mushroom -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4 shadow-xl relative">
+                        <div class="absolute top-3 right-3 bg-purple-900/80 text-purple-200 border border-purple-800 font-bold text-[10px] px-3 py-1 rounded-full uppercase">
+                            Gourmet
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80" alt="Truffle Mushroom" class="w-full h-44 rounded-2xl object-cover border border-gray-800">
+                        
+                        <div>
+                            <h3 class="text-lg font-black text-white">Truffle Mushroom</h3>
+                            <p class="text-xs text-gray-400 mt-1">Hongos portobello confitados al vino blanco, emulsión de trufa negra, queso suizo fundido y rúcula.</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 p-3 bg-gray-950 rounded-2xl border border-gray-800 text-xs">
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Precio Venta (COP):</span>
+                                <span class="text-base font-black text-white">$30.000</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Costo Insumos:</span>
+                                <span class="text-base font-bold text-gray-300">$12.500 <span class="text-[10px] text-green-400">(58% mgn)</span></span>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-xl text-[11px] text-green-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Combo Estandarizado: Papas rústicas + Gaseosa</span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-800">
+                            <span class="text-xs text-gray-400 font-bold"><i class="fa-solid fa-heart text-red-400 mr-1"></i> 19 Votos (38%)</span>
+                            <div class="flex space-x-1.5">
+                                <button onclick="editarRecetaBurger('Truffle Mushroom', 30000)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold px-3 py-1.5 rounded-xl transition">
+                                    Editar
+                                </button>
+                                <button onclick="togglePausarBurger(this, 'Truffle Mushroom')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-gray-700/60 transition">
+                                    Pausar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Burger 4: Spicy Jalapeño Bomb -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4 shadow-xl relative">
+                        <div class="absolute top-3 right-3 bg-red-900/80 text-red-200 border border-red-800 font-bold text-[10px] px-3 py-1 rounded-full uppercase">
+                            Picante
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&w=600&q=80" alt="Spicy Jalapeño Bomb" class="w-full h-44 rounded-2xl object-cover border border-gray-800">
+                        
+                        <div>
+                            <h3 class="text-lg font-black text-white">Spicy Jalapeño Bomb</h3>
+                            <p class="text-xs text-gray-400 mt-1">Jalapeños en tempura crujiente, mermelada picante de tocino, queso provolone fundido y salsa chipotle.</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 p-3 bg-gray-950 rounded-2xl border border-gray-800 text-xs">
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Precio Venta (COP):</span>
+                                <span class="text-base font-black text-white">$27.000</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Costo Insumos:</span>
+                                <span class="text-base font-bold text-gray-300">$10.500 <span class="text-[10px] text-green-400">(61% mgn)</span></span>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-xl text-[11px] text-green-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Combo Estandarizado: Papas rústicas + Gaseosa</span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-800">
+                            <span class="text-xs text-gray-400 font-bold"><i class="fa-solid fa-heart text-red-400 mr-1"></i> 12 Votos (24%)</span>
+                            <div class="flex space-x-1.5">
+                                <button onclick="editarRecetaBurger('Spicy Jalapeño Bomb', 27000)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold px-3 py-1.5 rounded-xl transition">
+                                    Editar
+                                </button>
+                                <button onclick="togglePausarBurger(this, 'Spicy Jalapeño Bomb')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-gray-700/60 transition">
+                                    Pausar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Burger 5: Smoked Chipotle Master -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-5 space-y-4 shadow-xl relative">
+                        <div class="absolute top-3 right-3 bg-gray-800 text-gray-300 border border-gray-700 font-bold text-[10px] px-3 py-1 rounded-full uppercase">
+                            Prototipo
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1553979459-d2229ba7433b?auto=format&fit=crop&w=600&q=80" alt="Smoked Chipotle Master" class="w-full h-44 rounded-2xl object-cover border border-gray-800">
+                        
+                        <div>
+                            <h3 class="text-lg font-black text-white">Smoked Chipotle Master</h3>
+                            <p class="text-xs text-gray-400 mt-1">Carne a la brasa de carbón, chimichurri ahumado de la casa, cebollas caramelizadas y suave chipotle.</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 p-3 bg-gray-950 rounded-2xl border border-gray-800 text-xs">
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Precio Venta (COP):</span>
+                                <span class="text-base font-black text-white">$29.000</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-semibold">Costo Insumos:</span>
+                                <span class="text-base font-bold text-gray-300">$11.000 <span class="text-[10px] text-green-400">(62% mgn)</span></span>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-xl text-[11px] text-green-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Combo Estandarizado: Papas rústicas + Gaseosa</span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-800">
+                            <span class="text-xs text-gray-400 font-bold"><i class="fa-solid fa-heart text-red-400 mr-1"></i> 8 Votos (16%)</span>
+                            <div class="flex space-x-1.5">
+                                <button onclick="editarRecetaBurger('Smoked Chipotle Master', 29000)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold px-3 py-1.5 rounded-xl transition">
+                                    Editar
+                                </button>
+                                <button onclick="togglePausarBurger(this, 'Smoked Chipotle Master')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-gray-700/60 transition">
+                                    Pausar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- PESTAÑA 5: MENÚ DE PUNTOS & CÓMO RECLAMAR HAMBURGUESAS -->
+            <!-- ============================================================== -->
+            <div id="tab-puntos" class="tab-content hidden space-y-8">
+                
+                <div>
+                    <div class="inline-flex items-center space-x-2 bg-gray-800 border border-gray-700 text-gray-200 px-3 py-1 rounded-full text-xs font-semibold mb-1.5">
+                        <i class="fa-solid fa-coins text-primary-400"></i>
+                        <span>Economía de Fidelización Secret Bite</span>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Reglas del Sistema de Puntos & Reclamo de Hamburguesas</h2>
+                    <p class="text-xs text-gray-400">Cómo acumulan puntos los clientes, tabla de recompensas y canjes por combos gratis.</p>
+                </div>
+
+                <!-- BLOQUE 1: CÓMO SE ACUMULAN LOS PUNTOS (REGLAS DE GANANCIA) -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl space-y-4">
+                    <h3 class="text-base font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-trend-up text-gray-400"></i>
+                        <span>1. ¿Cómo Acumulan Puntos los Clientes?</span>
+                    </h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+                        <div class="bg-gray-950 p-4 rounded-2xl border border-gray-800">
+                            <span class="text-2xl font-black text-primary-400 block mb-1">+1 Punto</span>
+                            <h5 class="text-xs font-bold text-white">Por cada $2.000 COP en Compras</h5>
+                            <p class="text-[11px] text-gray-400 mt-1">Una orden de combo de $28.000 genera automáticamente 14 puntos para la cuenta.</p>
+                        </div>
+
+                        <div class="bg-gray-950 p-4 rounded-2xl border border-gray-800">
+                            <span class="text-2xl font-black text-primary-400 block mb-1">+5 Puntos</span>
+                            <h5 class="text-xs font-bold text-white">Por Votar en el Menú Mensual</h5>
+                            <p class="text-[11px] text-gray-400 mt-1">Recompensa inmediata por participar en la elección democrática de la carta.</p>
+                        </div>
+
+                        <div class="bg-gray-950 p-4 rounded-2xl border border-gray-800">
+                            <span class="text-2xl font-black text-primary-400 block mb-1">+10 Puntos</span>
+                            <h5 class="text-xs font-bold text-white">Bono de Bienvenida Inmediato</h5>
+                            <p class="text-[11px] text-gray-400 mt-1">Otorgados al crear la cuenta en Secret Bite para incentivar la primera orden.</p>
+                        </div>
+
+                        <div class="bg-gray-950 p-4 rounded-2xl border border-gray-800">
+                            <span class="text-2xl font-black text-primary-400 block mb-1">+15 Puntos</span>
+                            <h5 class="text-xs font-bold text-white">Por Invitar a un Amigo al Club</h5>
+                            <p class="text-[11px] text-gray-400 mt-1">Se acreditan cuando el referido confirma y paga su primer combo de hamburguesa.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLOQUE 2: TABLA OFICIAL DE RECOMPENSAS & RECLAMO DE HAMBURGUESAS -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl space-y-4">
+                    <h3 class="text-base font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-gift text-gray-400"></i>
+                        <span>2. Tabla de Canjes: ¿Qué Puede Reclamar un Cliente con sus Puntos?</span>
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+                        
+                        <!-- Nivel 1: 30 Puntos -->
+                        <div class="bg-gray-950 p-5 rounded-2xl border border-gray-800 flex flex-col justify-between space-y-4">
+                            <div>
+                                <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-gray-200 flex items-center justify-center text-lg font-bold mb-3">
+                                    <i class="fa-solid fa-percent"></i>
+                                </div>
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Nivel Bronce</span>
+                                <h4 class="text-xl font-black text-white">30 Puntos</h4>
+                                <p class="text-xs text-gray-300 font-semibold mt-1">15% de Descuento en Cualquier Combo</p>
+                                <p class="text-[11px] text-gray-400 mt-1">Ahorro directo de $4.200 COP en la orden al momento de pagar.</p>
+                            </div>
+                            <span class="text-[10px] text-center font-bold bg-gray-900 py-1.5 px-2 rounded-xl text-gray-400 border border-gray-800">
+                                Descuento Parcial
+                            </span>
+                        </div>
+
+                        <!-- Nivel 2: 50 Puntos -->
+                        <div class="bg-gray-950 p-5 rounded-2xl border border-gray-800 flex flex-col justify-between space-y-4">
+                            <div>
+                                <div class="w-10 h-10 rounded-xl bg-green-500/10 text-green-400 flex items-center justify-center text-lg font-bold mb-3">
+                                    <i class="fa-solid fa-utensils"></i>
+                                </div>
+                                <span class="text-xs font-extrabold text-green-400 uppercase tracking-wider block">Nivel Plata</span>
+                                <h4 class="text-xl font-black text-white">50 Puntos</h4>
+                                <p class="text-xs text-gray-300 font-semibold mt-1">Papas Rústicas + Bebida GRATIS</p>
+                                <p class="text-[11px] text-gray-400 mt-1">Complementos del combo sin costo adicional (Valor comercial $12.000 COP).</p>
+                            </div>
+                            <span class="text-[10px] text-center font-bold bg-green-500/10 text-green-400 py-1.5 px-2 rounded-xl border border-green-500/20">
+                                Complemento Gratis
+                            </span>
+                        </div>
+
+                        <!-- Nivel 3: 80 Puntos (HAMBURGUESA GRATIS) -->
+                        <div class="bg-gray-900 p-5 rounded-2xl border border-primary-500/50 flex flex-col justify-between space-y-4 shadow-xl">
+                            <div>
+                                <div class="w-10 h-10 rounded-xl bg-primary-500 text-gray-950 flex items-center justify-center text-lg font-black mb-3">
+                                    <i class="fa-solid fa-burger"></i>
+                                </div>
+                                <span class="text-xs font-extrabold text-primary-400 uppercase tracking-wider block">¡Recompensa Estrella!</span>
+                                <h4 class="text-2xl font-black text-white">80 Puntos</h4>
+                                <p class="text-sm text-white font-black mt-1">🍔 ¡COMBO HAMBURGUESA GRATIS!</p>
+                                <p class="text-[11px] text-gray-300 mt-1">1 Combo Completo de La Burger Explosiva o la ganadora del mes (con papas y bebida) 100% GRATIS.</p>
+                            </div>
+                            <span class="text-[11px] text-center font-black bg-primary-500 text-gray-950 py-1.5 px-2 rounded-xl shadow-md">
+                                ¡Hamburguesa Sin Pagar Nada!
+                            </span>
+                        </div>
+
+                        <!-- Nivel 4: 120 Puntos -->
+                        <div class="bg-gray-950 p-5 rounded-2xl border border-purple-500/40 flex flex-col justify-between space-y-4">
+                            <div>
+                                <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-lg font-bold mb-3">
+                                    <i class="fa-solid fa-crown"></i>
+                                </div>
+                                <span class="text-xs font-extrabold text-purple-400 uppercase tracking-wider block">VIP Legend</span>
+                                <h4 class="text-xl font-black text-white">120 Puntos</h4>
+                                <p class="text-xs text-gray-300 font-semibold mt-1">VIP Secret Tasting Box</p>
+                                <p class="text-[11px] text-gray-400 mt-1">2 Combos completos de autor + postre artesanal + salsa especial de la casa de regalo.</p>
+                            </div>
+                            <span class="text-[10px] text-center font-bold bg-purple-500/10 text-purple-300 py-1.5 px-2 rounded-xl border border-purple-500/20">
+                                Experiencia Doble
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- BLOQUE 3: SIMULADOR INTERACTIVO DE PUNTOS -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h3 class="text-base font-black text-white flex items-center gap-2">
+                                <i class="fa-solid fa-calculator text-gray-400"></i>
+                                <span>3. Simulador de Canje de Puntos en Vivo</span>
+                            </h3>
+                            <p class="text-xs text-gray-400">Prueba cómo responde el sistema de beneficios cuando un cliente acumula puntos.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-950 p-5 rounded-2xl border border-gray-800 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-300">Selecciona o simula un saldo de puntos:</span>
+                            <span id="simuladorPuntosDisplay" class="text-2xl font-black text-primary-400">80 Puntos</span>
+                        </div>
+
+                        <!-- Slider -->
+                        <input 
+                            type="range" 
+                            id="puntosSlider" 
+                            min="0" 
+                            max="150" 
+                            step="5" 
+                            value="80" 
+                            oninput="actualizarSimulador(this.value)"
+                            class="w-full h-2.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                        >
+                        <div class="flex justify-between text-[10px] text-gray-500 font-bold px-1">
+                            <span>0 pts (Inicio)</span>
+                            <span>30 pts (15% Desc)</span>
+                            <span>50 pts (Papas Gratis)</span>
+                            <span class="text-primary-400 font-black">80 pts (Burger Gratis)</span>
+                            <span>120 pts (Box VIP)</span>
+                            <span>150 pts</span>
+                        </div>
+
+                        <!-- Resultado Dinámico del Simulador -->
+                        <div id="simuladorResultado" class="p-4 rounded-2xl bg-primary-500/10 border border-primary-500/30 flex items-start space-x-3.5 transition-all">
+                            <div class="w-10 h-10 rounded-xl bg-primary-500 text-gray-950 font-black flex items-center justify-center text-lg flex-shrink-0">
+                                <i class="fa-solid fa-burger"></i>
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-xs font-black text-primary-400 uppercase tracking-wider block">¡Premio Alcanzado!</span>
+                                <h4 class="text-base font-black text-white">¡Combo La Burger Explosiva 100% GRATIS!</h4>
+                                <p class="text-xs text-gray-300 mt-0.5">El cliente ha alcanzado la meta estelar. Al ordenar, el total a pagar será $0 COP para su combo con papas y bebida.</p>
+                            </div>
+                            <button onclick="alert('Simulación de canje ejecutada: Cupón de hamburguesa gratis generado exitosamente.')" class="bg-primary-500 text-gray-950 font-black text-xs px-3.5 py-2 rounded-xl">
+                                Probar Canje
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLOQUE 4: HISTORIAL DE CANJES DE HAMBURGUESAS EN COCINA -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl space-y-4">
+                    <h3 class="text-base font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-gray-400"></i>
+                        <span>4. Registro de Canjes Recientes en la Dark Kitchen</span>
+                    </h3>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-800 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                                    <th class="py-3 px-4">Ticket de Canje</th>
+                                    <th class="py-3 px-4">Cliente VIP</th>
+                                    <th class="py-3 px-4">Beneficio Reclamado</th>
+                                    <th class="py-3 px-4 text-center">Puntos Deducidos</th>
+                                    <th class="py-3 px-4">Fecha / Hora</th>
+                                    <th class="py-3 px-4 text-center">Estado del Canje</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-800/60">
+                                <tr class="hover:bg-gray-950/50 transition">
+                                    <td class="py-3.5 px-4 font-mono font-bold text-gray-200">#CANJE-904</td>
+                                    <td class="py-3.5 px-4 font-bold text-white">Camila Restrepo</td>
+                                    <td class="py-3.5 px-4 text-white font-black">
+                                        <span class="bg-white/10 text-white border border-white/10 px-2.5 py-1 rounded-lg">
+                                            🍔 1x Combo La Burger Explosiva GRATIS
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-red-400">- 80 pts</td>
+                                    <td class="py-3.5 px-4 text-gray-400">Hoy a las 7:15 PM</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="bg-green-500/10 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-bold">Despachado en Cocina</span>
+                                    </td>
+                                </tr>
+
+                                <tr class="hover:bg-gray-950/50 transition">
+                                    <td class="py-3.5 px-4 font-mono font-bold text-gray-200">#CANJE-903</td>
+                                    <td class="py-3.5 px-4 font-bold text-white">Andrés Salazar</td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-semibold">15% de Descuento ($4.200 COP)</td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-red-400">- 30 pts</td>
+                                    <td class="py-3.5 px-4 text-gray-400">Hoy a las 6:40 PM</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-bold">Aplicado en Factura</span>
+                                    </td>
+                                </tr>
+
+                                <tr class="hover:bg-gray-950/50 transition">
+                                    <td class="py-3.5 px-4 font-mono font-bold text-gray-200">#CANJE-902</td>
+                                    <td class="py-3.5 px-4 font-bold text-white">Mariana Gómez</td>
+                                    <td class="py-3.5 px-4 text-gray-300 font-semibold">Papas Rústicas + Bebida Gratis</td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-red-400">- 50 pts</td>
+                                    <td class="py-3.5 px-4 text-gray-400">Ayer a las 8:10 PM</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="bg-green-500/10 text-green-400 border border-green-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-bold">Entregado</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- PESTAÑA 6: PEDIDOS & COMANDAS ACTIVAS -->
+            <!-- ============================================================== -->
+            <div id="tab-pedidos" class="tab-content hidden space-y-6">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Comandas & Reservas Activas</h2>
+                        <p class="text-xs text-gray-400">Control de producción en línea para la Dark Kitchen.</p>
+                    </div>
+
+                    <!-- Filtros por Estado -->
+                    <div class="flex items-center space-x-1 bg-gray-950 p-1 rounded-xl border border-gray-800 overflow-x-auto no-scrollbar">
+                        <button onclick="filtrarPedidos('todos', this)" class="filtro-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-gray-950 transition">
+                            Todos (5)
+                        </button>
+                        <button onclick="filtrarPedidos('cocina', this)" class="filtro-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                            En Cocina (2)
+                        </button>
+                        <button onclick="filtrarPedidos('listo', this)" class="filtro-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                            Listos (2)
+                        </button>
+                        <button onclick="filtrarPedidos('pendiente', this)" class="filtro-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                            Pendientes (1)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla de Pedidos -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-800 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                                <th class="py-3 px-4">Pedido ID</th>
+                                <th class="py-3 px-4">Cliente VIP</th>
+                                <th class="py-3 px-4">Hamburguesa / Combo</th>
+                                <th class="py-3 px-4 text-center">Cant.</th>
+                                <th class="py-3 px-4">Total COP</th>
+                                <th class="py-3 px-4">Tiempo</th>
+                                <th class="py-3 px-4">Estado</th>
+                                <th class="py-3 px-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pedidosTableBody" class="divide-y divide-gray-800/60">
+                            
+                            <!-- Fila 1 -->
+                            <tr class="hover:bg-gray-950/50 transition pedido-fila" data-estado="cocina">
+                                <td class="py-3.5 px-4 font-mono font-bold text-gray-200">#SB-1049</td>
+                                <td class="py-3.5 px-4">
+                                    <div class="font-bold text-white">Andrés Salazar</div>
+                                    <span class="text-[10px] text-gray-400 font-semibold"><i class="fa-solid fa-coins text-primary-400 mr-0.5"></i> 30 pts (15% desc.)</span>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <span class="text-white font-semibold">La Burger Explosiva</span>
+                                    <span class="block text-[10px] text-gray-400">Combo Estandarizado (Papas + Cola)</span>
+                                </td>
+                                <td class="py-3.5 px-4 text-center font-bold text-white">2</td>
+                                <td class="py-3.5 px-4 font-bold text-white">$47.600</td>
+                                <td class="py-3.5 px-4 text-gray-400">Hace 6 min</td>
+                                <td class="py-3.5 px-4">
+                                    <span class="bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                                        <i class="fa-solid fa-fire animate-pulse text-[8px]"></i> En Preparación
+                                    </span>
+                                </td>
+                                <td class="py-3.5 px-4 text-right space-x-1">
+                                    <button onclick="cambiarEstadoPedido(this, 'Listo')" title="Marcar como listo" class="p-1.5 rounded-lg bg-gray-800 hover:bg-green-600 hover:text-white text-gray-300 transition">
+                                        <i class="fa-solid fa-check text-xs"></i>
+                                    </button>
+                                    <button onclick="imprimirComanda('#SB-1049', 'Andrés Salazar', 'La Burger Explosiva', 2)" title="Imprimir comanda" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition">
+                                        <i class="fa-solid fa-print text-xs"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Fila 2 -->
+                            <tr class="hover:bg-gray-950/50 transition pedido-fila" data-estado="cocina">
+                                <td class="py-3.5 px-4 font-mono font-bold text-gray-200">#SB-1048</td>
+                                <td class="py-3.5 px-4">
+                                    <div class="font-bold text-white">Valeria Mendoza</div>
+                                    <span class="text-[10px] text-gray-400">Cliente Nuevo</span>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <span class="text-white font-semibold">BBQ Crunch Supreme</span>
+                                    <span class="block text-[10px] text-gray-400">Combo Estandarizado (Papas + Cola)</span>
+                                </td>
+                                <td class="py-3.5 px-4 text-center font-bold text-white">1</td>
+                                <td class="py-3.5 px-4 font-bold text-white">$26.000</td>
+                                <td class="py-3.5 px-4 text-gray-400">Hace 14 min</td>
+                                <td class="py-3.5 px-4">
+                                    <span class="bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                                        <i class="fa-solid fa-fire animate-pulse text-[8px]"></i> En Preparación
+                                    </span>
+                                </td>
+                                <td class="py-3.5 px-4 text-right space-x-1">
+                                    <button onclick="cambiarEstadoPedido(this, 'Listo')" title="Marcar como listo" class="p-1.5 rounded-lg bg-gray-800 hover:bg-green-600 hover:text-white text-gray-300 transition">
+                                        <i class="fa-solid fa-check text-xs"></i>
+                                    </button>
+                                    <button onclick="imprimirComanda('#SB-1048', 'Valeria Mendoza', 'BBQ Crunch Supreme', 1)" title="Imprimir comanda" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition">
+                                        <i class="fa-solid fa-print text-xs"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Fila 3 -->
+                            <tr class="hover:bg-gray-950/50 transition pedido-fila" data-estado="listo">
+                                <td class="py-3.5 px-4 font-mono font-bold text-gray-200">#SB-1047</td>
+                                <td class="py-3.5 px-4">
+                                    <div class="font-bold text-white">Felipe Cárdenas</div>
+                                    <span class="text-[10px] text-gray-400 font-semibold"><i class="fa-solid fa-coins text-primary-400 mr-0.5"></i> 20 pts</span>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <span class="text-white font-semibold">La Burger Explosiva</span>
+                                    <span class="block text-[10px] text-gray-400">Combo Estandarizado</span>
+                                </td>
+                                <td class="py-3.5 px-4 text-center font-bold text-white">3</td>
+                                <td class="py-3.5 px-4 font-bold text-white">$84.000</td>
+                                <td class="py-3.5 px-4 text-gray-400">Hace 25 min</td>
+                                <td class="py-3.5 px-4">
+                                    <span class="bg-green-500/10 text-green-400 border border-green-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                                        <i class="fa-solid fa-box text-[8px]"></i> Listo para Entrega
+                                    </span>
+                                </td>
+                                <td class="py-3.5 px-4 text-right space-x-1">
+                                    <button onclick="cambiarEstadoPedido(this, 'Entregado')" title="Marcar entregado" class="p-1.5 rounded-lg bg-gray-800 hover:bg-blue-600 hover:text-white text-gray-300 transition">
+                                        <i class="fa-solid fa-motorcycle text-xs"></i>
+                                    </button>
+                                    <button onclick="imprimirComanda('#SB-1047', 'Felipe Cárdenas', 'La Burger Explosiva', 3)" title="Imprimir comanda" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition">
+                                        <i class="fa-solid fa-print text-xs"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Fila 4 -->
+                            <tr class="hover:bg-gray-950/50 transition pedido-fila" data-estado="listo">
+                                <td class="py-3.5 px-4 font-mono font-bold text-gray-200">#SB-1046</td>
+                                <td class="py-3.5 px-4">
+                                    <div class="font-bold text-white">Camila Restrepo</div>
+                                    <span class="text-[10px] text-gray-400 font-semibold"><i class="fa-solid fa-crown text-primary-400 mr-0.5"></i> VIP Gold</span>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <span class="text-white font-semibold">Truffle Mushroom</span>
+                                    <span class="block text-[10px] text-gray-400">Combo Estandarizado</span>
+                                </td>
+                                <td class="py-3.5 px-4 text-center font-bold text-white">1</td>
+                                <td class="py-3.5 px-4 font-bold text-white">$30.000</td>
+                                <td class="py-3.5 px-4 text-gray-400">Hace 32 min</td>
+                                <td class="py-3.5 px-4">
+                                    <span class="bg-green-500/10 text-green-400 border border-green-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                                        <i class="fa-solid fa-box text-[8px]"></i> Listo para Entrega
+                                    </span>
+                                </td>
+                                <td class="py-3.5 px-4 text-right space-x-1">
+                                    <button onclick="cambiarEstadoPedido(this, 'Entregado')" title="Marcar entregado" class="p-1.5 rounded-lg bg-gray-800 hover:bg-blue-600 hover:text-white text-gray-300 transition">
+                                        <i class="fa-solid fa-motorcycle text-xs"></i>
+                                    </button>
+                                    <button onclick="imprimirComanda('#SB-1046', 'Camila Restrepo', 'Truffle Mushroom', 1)" title="Imprimir comanda" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition">
+                                        <i class="fa-solid fa-print text-xs"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Fila 5 -->
+                            <tr class="hover:bg-gray-950/50 transition pedido-fila" data-estado="pendiente">
+                                <td class="py-3.5 px-4 font-mono font-bold text-gray-200">#SB-1045</td>
+                                <td class="py-3.5 px-4">
+                                    <div class="font-bold text-white">Santiago Muñoz</div>
+                                    <span class="text-[10px] text-gray-400">Reserva Programada</span>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <span class="text-white font-semibold">La Burger Explosiva</span>
+                                    <span class="block text-[10px] text-gray-400">Combo Estandarizado</span>
+                                </td>
+                                <td class="py-3.5 px-4 text-center font-bold text-white">2</td>
+                                <td class="py-3.5 px-4 font-bold text-white">$56.000</td>
+                                <td class="py-3.5 px-4 text-gray-400">Para las 8:30 PM</td>
+                                <td class="py-3.5 px-4">
+                                    <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                                        <i class="fa-solid fa-calendar-check text-[8px]"></i> Pendiente Cocinar
+                                    </span>
+                                </td>
+                                <td class="py-3.5 px-4 text-right space-x-1">
+                                    <button onclick="cambiarEstadoPedido(this, 'En Preparación')" title="Enviar a cocina" class="p-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-gray-950 font-bold transition">
+                                        <i class="fa-solid fa-fire text-xs"></i>
+                                    </button>
+                                    <button onclick="imprimirComanda('#SB-1045', 'Santiago Muñoz', 'La Burger Explosiva', 2)" title="Imprimir comanda" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition">
+                                        <i class="fa-solid fa-print text-xs"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODALES INTERACTIVOS -->
+    <!-- ============================================================== -->
+
+    <!-- 1. MODAL CREAR NUEVA HAMBURGUESA -->
+    <div id="modalNuevaBurger" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden glow-primary-sm">
+            
+            <div class="flex items-center justify-between pb-4 border-b border-gray-800">
+                <div class="flex items-center space-x-2">
+                    <span class="w-8 h-8 rounded-xl bg-primary-500/20 text-primary-400 flex items-center justify-center text-sm font-bold">
+                        <i class="fa-solid fa-burger"></i>
+                    </span>
+                    <h3 class="font-black text-lg text-white">Añadir Nueva Hamburguesa al Menú</h3>
+                </div>
+                <button onclick="cerrarModalNuevaBurger()" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <form onsubmit="guardarNuevaBurger(event)" class="space-y-4 pt-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Nombre de la Creación</label>
+                    <input type="text" id="burgerNombreInput" required placeholder="Ej: Smoked Chipotle Master" class="w-full bg-gray-950 border border-gray-800 text-white text-xs rounded-xl px-3.5 py-2.5 focus:border-primary-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Ingredientes Principales</label>
+                    <textarea id="burgerDescInput" rows="2" required placeholder="Carne Angus 220g, queso provolone ahumado, cebollas crujientes..." class="w-full bg-gray-950 border border-gray-800 text-white text-xs rounded-xl px-3.5 py-2.5 focus:border-primary-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Precio Combo (COP)</label>
+                        <input type="number" id="burgerPrecioInput" required value="29000" class="w-full bg-gray-950 border border-gray-800 text-white text-xs rounded-xl px-3.5 py-2.5 focus:border-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Meta Mínima Votos</label>
+                        <input type="number" id="burgerMetaInput" required value="50" class="w-full bg-gray-950 border border-gray-800 text-white text-xs rounded-xl px-3.5 py-2.5 focus:border-primary-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="bg-gray-950/60 border border-gray-800 p-3 rounded-xl flex items-center space-x-2">
+                    <input type="checkbox" id="burgerComboCheck" checked class="w-4 h-4 rounded text-primary-500 bg-gray-900 border-gray-700 focus:ring-primary-500">
+                    <label for="burgerComboCheck" class="text-xs text-gray-300 select-none">
+                        Combo Estandarizado obligatorio (Incluye papas fritas y gaseosa)
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 pt-2">
+                    <button type="button" onclick="cerrarModalNuevaBurger()" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white bg-gray-800 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-black bg-primary-500 hover:bg-primary-400 text-gray-950 shadow-lg shadow-primary-500/20 transition">
+                        Publicar en Votación
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- 2. MODAL NUEVO USUARIO CON ROL -->
+    <div id="modalNuevoUsuario" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            
+            <div class="flex items-center justify-between pb-4 border-b border-gray-800">
+                <div class="flex items-center space-x-2">
+                    <span class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm font-bold">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </span>
+                    <h3 class="font-black text-lg text-white">Asignar Nuevo Usuario con Rol</h3>
+                </div>
+                <button onclick="cerrarModalNuevoUsuario()" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <form onsubmit="guardarNuevoUsuario(event)" class="space-y-4 pt-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Nombre Completo</label>
+                    <input type="text" id="nuevoUsuarioNombre" required placeholder="Ej: Carlos Sarmiento" class="w-full bg-gray-950 border border-gray-800 text-white text-xs rounded-xl px-3.5 py-2.5 focus:border-primary-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Correo Electrónico Corporativo</label>
+                    <input type="email" id="nuevoUsuarioEmail" required placeholder="carlos@secretbite.com" class="w-full bg-gray-950 border border-gray-800 text-white text-xs rounded-xl px-3.5 py-2.5 focus:border-primary-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Rol a Asignar</label>
+                    <select id="nuevoUsuarioRol" class="w-full bg-gray-950 border border-gray-800 text-white text-xs rounded-xl px-3.5 py-2.5 focus:border-primary-500 focus:outline-none">
+                        <option value="Chef Ejecutivo">Chef Ejecutivo de Cocina</option>
+                        <option value="Gestor de Menú">Gestor de Menú & Votaciones</option>
+                        <option value="Logística & Despacho">Logística & Despacho</option>
+                        <option value="Super Administrador">Super Administrador</option>
+                    </select>
+                </div>
+
+                <div class="bg-gray-950/60 border border-gray-800 p-3.5 rounded-xl space-y-2 text-xs">
+                    <span class="font-bold text-gray-300 block">Permisos automáticos de este rol:</span>
+                    <label class="flex items-center space-x-2 text-gray-400">
+                        <input type="checkbox" checked class="rounded text-primary-500 bg-gray-900 border-gray-700">
+                        <span>Acceso a comandas y actualización de pedidos</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-gray-400">
+                        <input type="checkbox" checked class="rounded text-primary-500 bg-gray-900 border-gray-700">
+                        <span>Edición de recetas e inventario</span>
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 pt-2">
+                    <button type="button" onclick="cerrarModalNuevoUsuario()" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white bg-gray-800 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-black bg-primary-500 hover:bg-primary-400 text-gray-950 shadow-lg shadow-primary-500/20 transition">
+                        Guardar Usuario
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- SCRIPTS DE INTERACTIVIDAD -->
+    <!-- ============================================================== -->
+    <script>
+        // Toggle Sidebar en móvil
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sb.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        // Cambio de Pestañas (Tab Switcher)
+        function cambiarPestana(tabKey, botonElement) {
+            // Ocultar todas las pestañas
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            // Mostrar la seleccionada
+            const targetTab = document.getElementById(`tab-${tabKey}`);
+            if (targetTab) {
+                targetTab.classList.remove('hidden');
+            }
+
+            // Actualizar estilo en botones del sidebar
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.className = 'nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 font-semibold text-xs transition';
+                const dot = btn.querySelector('.nav-dot');
+                if (dot) dot.remove();
+            });
+
+            if (botonElement) {
+                botonElement.className = 'nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/10 text-white font-bold text-xs border border-white/10 transition';
+                if (!botonElement.querySelector('.nav-dot')) {
+                    const dot = document.createElement('span');
+                    dot.className = 'nav-dot w-1.5 h-1.5 rounded-full bg-primary-400';
+                    botonElement.appendChild(dot);
+                }
+            }
+
+            // Actualizar Títulos de la barra superior
+            const titulos = {
+                'visionGeneral': { t: 'Centro de Control Secret Bite', sub: 'Monitoreo en tiempo real de producción, votación y reservas' },
+                'usuarios': { t: 'Usuarios & Roles del Sistema', sub: 'Administración de accesos del equipo de cocina y administradores' },
+                'clientes': { t: 'Clientes Registrados & Votos del Mes', sub: 'Padrón de votantes de la comunidad gastronómica y estado de votos' },
+                'menu': { t: 'Catálogo de Hamburguesas & Recetas', sub: 'Precios, costos, margen y combos estandarizados de las creaciones' },
+                'puntos': { t: 'Sistema de Puntos & Reclamo de Burgers', sub: 'Reglas de acumulación, canjes por combos gratis y calculadora' },
+                'pedidos': { t: 'Comandas & Reservas Activas', sub: 'Línea de producción en vivo de la Dark Kitchen' }
+            };
+
+            if (titulos[tabKey]) {
+                document.getElementById('headerTitulo').innerText = titulos[tabKey].t;
+                document.getElementById('headerSubtitulo').innerText = titulos[tabKey].sub;
+            }
+
+            // Cerrar sidebar en móvil al cambiar
+            if (window.innerWidth < 1024) {
+                const sb = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                sb.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Filtrar usuarios por rol
+        function filtrarUsuariosPorRol(rol) {
+            document.querySelectorAll('.user-row').forEach(row => {
+                if (rol === 'todos' || row.getAttribute('data-rol') === rol) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function toggleEstadoUsuario(btn) {
+            const fila = btn.closest('tr');
+            const estadoBadge = fila.cells[5].querySelector('span');
+            if (estadoBadge.innerText === 'Activo') {
+                estadoBadge.className = 'bg-red-500/10 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold';
+                estadoBadge.innerText = 'Bloqueado';
+                alert('⚠️ Acceso desactivado para el usuario.');
+            } else {
+                estadoBadge.className = 'bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold';
+                estadoBadge.innerText = 'Activo';
+                alert('✅ Acceso reactivado para el usuario.');
+            }
+        }
+
+        function editarUsuario(nombre, rol) {
+            const nuevoRol = prompt(`Editar rol para ${nombre}:\n(Opciones: Super Administrador, Chef Ejecutivo, Gestor de Menú, Logística & Despacho)`, rol);
+            if (nuevoRol) {
+                alert(`✅ Rol de ${nombre} actualizado a: "${nuevoRol}".`);
+            }
+        }
+
+        // Filtrar clientes por voto
+        function filtrarClientesVoto(voto, boton) {
+            document.querySelectorAll('.filtro-voto-btn').forEach(btn => {
+                btn.className = 'filtro-voto-btn px-3 py-1 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition';
+            });
+            boton.className = 'filtro-voto-btn px-3 py-1 rounded-lg text-xs font-bold bg-white text-gray-950 transition';
+
+            document.querySelectorAll('.cliente-row').forEach(row => {
+                if (voto === 'todos' || row.getAttribute('data-voto') === voto) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function bonificarPuntos(cliente) {
+            const cant = prompt(`¿Cuántos puntos deseas acreditar a ${cliente} como bono manual?`, "10");
+            if (cant && !isNaN(cant)) {
+                alert(`✨ ¡Acreditados +${cant} puntos a ${cliente} con éxito! Notificación enviada.`);
+            }
+        }
+
+        function enviarRecordatorio(cliente) {
+            alert(`📲 Enviando mensaje a ${cliente} vía WhatsApp:\n"¡Hola! Tienes 1 voto disponible este mes en Secret Bite para elegir tu hamburguesa favorita. ¡Tu voto además te otorga +5 puntos!"`);
+        }
+
+        // Acciones de Menú de Hamburguesas
+        function editarRecetaBurger(nombre, precio) {
+            const nuevoPrecio = prompt(`Editar precio de venta de ${nombre} (COP):`, precio);
+            if (nuevoPrecio) {
+                alert(`✅ Precio de ${nombre} actualizado a $${Number(nuevoPrecio).toLocaleString()} COP.`);
+            }
+        }
+
+        function togglePausarBurger(btn, nombre) {
+            if (btn.innerText === 'Pausar') {
+                btn.innerText = 'Reactivar';
+                btn.className = 'bg-red-500/20 text-red-400 text-xs font-bold px-3 py-1.5 rounded-xl border border-red-500/30';
+                alert(`⏸️ "${nombre}" ha sido pausada temporalmente del catálogo público.`);
+            } else {
+                btn.innerText = 'Pausar';
+                btn.className = 'bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-gray-700/60 transition';
+                alert(`▶️ "${nombre}" vuelve a estar disponible para votación.`);
+            }
+        }
+
+        // Simulador de Puntos en Vivo
+        function actualizarSimulador(puntos) {
+            document.getElementById('simuladorPuntosDisplay').innerText = `${puntos} Puntos`;
+            const box = document.getElementById('simuladorResultado');
+
+            if (puntos >= 120) {
+                box.className = 'p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-start space-x-3.5 transition-all';
+                box.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl bg-purple-500 text-white font-black flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs font-black text-purple-400 uppercase tracking-wider block">¡Máximo Nivel VIP!</span>
+                        <h4 class="text-base font-black text-white">VIP Secret Tasting Box Completa</h4>
+                        <p class="text-xs text-gray-300 mt-0.5">El cliente puede reclamar 2 combos completos de autor + postre artesanal + salsa secreta de la casa 100% gratis.</p>
+                    </div>
+                `;
+            } else if (puntos >= 80) {
+                box.className = 'p-4 rounded-2xl bg-primary-500/10 border border-primary-500/30 flex items-start space-x-3.5 transition-all';
+                box.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl bg-primary-500 text-gray-950 font-black flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-burger"></i>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs font-black text-primary-400 uppercase tracking-wider block">¡Meta Estelar Alcanzada!</span>
+                        <h4 class="text-base font-black text-white">🍔 ¡COMBO HAMBURGUESA GRATIS!</h4>
+                        <p class="text-xs text-gray-300 mt-0.5">Con 80 puntos el cliente no paga nada por su Combo Completo de La Burger Explosiva (incluye papas y bebida).</p>
+                    </div>
+                `;
+            } else if (puntos >= 50) {
+                box.className = 'p-4 rounded-2xl bg-green-500/10 border border-green-500/30 flex items-start space-x-3.5 transition-all';
+                box.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl bg-green-500 text-gray-950 font-black flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-utensils"></i>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs font-black text-green-400 uppercase tracking-wider block">¡Complementos Sin Costo!</span>
+                        <h4 class="text-base font-black text-white">Papas Rústicas + Bebida Fría GRATIS</h4>
+                        <p class="text-xs text-gray-300 mt-0.5">Ahorro de $12.000 COP en la orden. Le faltan <strong>${80 - puntos} puntos</strong> para la hamburguesa gratis.</p>
+                    </div>
+                `;
+            } else if (puntos >= 30) {
+                box.className = 'p-4 rounded-2xl bg-gray-900 border border-gray-800 flex items-start space-x-3.5 transition-all';
+                box.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl bg-gray-800 text-primary-400 font-black flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-percent"></i>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs font-black text-primary-400 uppercase tracking-wider block">Descuento Directo</span>
+                        <h4 class="text-base font-black text-white">15% de Descuento en la Orden</h4>
+                        <p class="text-xs text-gray-300 mt-0.5">Ahorro de $4.200 COP en su combo. Le faltan <strong>${80 - puntos} puntos</strong> para reclamar la hamburguesa completa gratis.</p>
+                    </div>
+                `;
+            } else {
+                box.className = 'p-4 rounded-2xl bg-gray-900 border border-gray-800 flex items-start space-x-3.5 transition-all';
+                box.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl bg-gray-800 text-gray-500 font-black flex items-center justify-center text-lg flex-shrink-0">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block">Acumulando Puntos</span>
+                        <h4 class="text-base font-bold text-gray-300">Saldo: ${puntos} Puntos</h4>
+                        <p class="text-xs text-gray-400 mt-0.5">Faltan <strong>${30 - puntos} puntos</strong> para el primer beneficio (15% OFF) y <strong>${80 - puntos} puntos</strong> para la hamburguesa gratis.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Filtrar Pedidos en Vivo
+        function filtrarPedidos(estado, boton) {
+            document.querySelectorAll('.filtro-btn').forEach(btn => {
+                btn.className = 'filtro-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition';
+            });
+            boton.className = 'filtro-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-gray-950 transition';
+
+            const filas = document.querySelectorAll('.pedido-fila');
+            filas.forEach(fila => {
+                if (estado === 'todos' || fila.getAttribute('data-estado') === estado) {
+                    fila.style.display = '';
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+        }
+
+        function cambiarEstadoPedido(boton, nuevoEstado) {
+            const fila = boton.closest('tr');
+            const celdaEstado = fila.cells[6];
+            
+            if (nuevoEstado === 'Listo') {
+                fila.setAttribute('data-estado', 'listo');
+                celdaEstado.innerHTML = `
+                    <span class="bg-green-500/10 text-green-400 border border-green-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                        <i class="fa-solid fa-box text-[8px]"></i> Listo para Entrega
+                    </span>
+                `;
+                alert('✅ Pedido actualizado a: Listo para Entrega. Se ha notificado al cliente.');
+            } else if (nuevoEstado === 'Entregado') {
+                fila.setAttribute('data-estado', 'entregado');
+                celdaEstado.innerHTML = `
+                    <span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                        <i class="fa-solid fa-circle-check text-[8px]"></i> Pedido Entregado
+                    </span>
+                `;
+                alert('🚀 ¡Pedido completado y entregado con éxito!');
+            } else if (nuevoEstado === 'En Preparación') {
+                fila.setAttribute('data-estado', 'cocina');
+                celdaEstado.innerHTML = `
+                    <span class="bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2.5 py-1 rounded-full font-bold text-[10px] inline-flex items-center gap-1">
+                        <i class="fa-solid fa-fire animate-pulse text-[8px]"></i> En Preparación
+                    </span>
+                `;
+                alert('🔥 Pedido enviado a la parrilla de la Dark Kitchen.');
+            }
+        }
+
+        function imprimirComanda(id, cliente, burger, cant) {
+            alert(`🖨️ [Comanda Secret Bite Enviada a Impresora Térmica]\n-----------------------------------\nOrden: ${id}\nCliente: ${cliente}\nPlato: ${burger} x ${cant}\nIncluye: Papas fritas + Gaseosa obligatoria.\nEstado: Confirmado para cocina.`);
+        }
+
+        // Modales
+        function abrirModalNuevaBurger() {
+            document.getElementById('modalNuevaBurger').classList.remove('hidden');
+        }
+
+        function cerrarModalNuevaBurger() {
+            document.getElementById('modalNuevaBurger').classList.add('hidden');
+        }
+
+        function guardarNuevaBurger(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('burgerNombreInput').value;
+            const precio = document.getElementById('burgerPrecioInput').value;
+            alert(`✨ ¡Creación "${nombre}" ($${Number(precio).toLocaleString()} COP) añadida con éxito al sistema de votaciones y al catálogo de cocina!`);
+            cerrarModalNuevaBurger();
+        }
+
+        function abrirModalNuevoUsuario() {
+            document.getElementById('modalNuevoUsuario').classList.remove('hidden');
+        }
+
+        function cerrarModalNuevoUsuario() {
+            document.getElementById('modalNuevoUsuario').classList.add('hidden');
+        }
+
+        function guardarNuevoUsuario(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('nuevoUsuarioNombre').value;
+            const email = document.getElementById('nuevoUsuarioEmail').value;
+            const rol = document.getElementById('nuevoUsuarioRol').value;
+
+            alert(`🎉 ¡Usuario "${nombre}" (${email}) registrado con el rol de "${rol}" exitosamente!`);
+            cerrarModalNuevoUsuario();
+        }
+    </script>
+</body>
+</html>
+
+

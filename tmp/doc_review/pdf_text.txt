@@ -1,0 +1,476 @@
+
+===== PAGE 1 =====
+Estilos arquitectónicos y selección justificada — Secret Bite Web (Parte
+1)
+Sebastian Perlaza Villa
+Sara Vanegas Garci
+Para Secret Bite Web el equipo elige un monolito modular organizado en capas, con arquitectura
+cliente-servidor (SPA + API REST + base de datos). Esta sección corresponde a la primera parte de la
+actividad: marco de comparación, fichas de cinco estilos, cuadro comparativo, escenarios de calidad y
+justificación de la decisión.
+Secret Bite Web es la plataforma de una hamburguesería con dos funciones: la votación mensual de la
+hamburguesa del mes (MVP ya generado) y la gestión de pedidos a domicilio. La decisión se documenta
+aquí antes de consultar al asistente de IA, como exige el paso 7 de la actividad.
+1. Marco de comparación
+Los estilos se comparan con ocho criterios: seis atributos de calidad del modelo de producto de ISO/IEC
+25010:2011 que son relevantes para una aplicación web de pedidos y votaciones, y cuatro factores
+prácticos ligados a un equipo universitario pequeño y un semestre de plazo. La escala es cualitativa (Alta,
+Media, Baja), y cada valoración se sustenta en las fichas de la sección 2.
+# Criterio Tipo Qué se valora Por qué importa en Secret
+Bite Web
+C1 Eficiencia de ISO/IEC 25010 Tiempo de respuesta y Picos de tráfico al abrir y
+desempeño uso de recursos bajo cerrar la votación mensual
+carga y en horas de almuerzo y
+cena
+C2 Escalabilidad / ISO/IEC 25010 Facilidad de atender Crecimiento posible de
+elasticidad (capacidad) más usuarios clientes y sedes
+agregando recursos
+C3 Fiabilidad ISO/IEC 25010 Que una falla parcial Un pedido perdido es una
+(disponibilidad y no tumbe el sistema venta perdida
+tolerancia a fallos)
+C4 Seguridad ISO/IEC 25010 Confidencialidad, Un voto por usuario; datos
+integridad, personales y direcciones
+autenticidad de entrega
+
+===== PAGE 2 =====
+# Criterio Tipo Qué se valora Por qué importa en Secret
+Bite Web
+C5 Mantenibilidad ISO/IEC 25010 Costo de agregar o El módulo de pedidos se
+(modularidad, cambiar funciones agrega después del MVP
+modificabilidad) de votación
+C6 Facilidad de ISO/IEC 25010 Facilidad de aislar y La etapa de pruebas es
+prueba (mantenibilidad) probar componentes parte del curso
+C7 Simplicidad de Factor práctico Curva de aprendizaje y Equipo de estudiantes, un
+construcción número de piezas semestre
+C8 Costo de Factor práctico Infraestructura, Presupuesto del proyecto
+despliegue y monitoreo, número de ya estimado y acotado
+operación servicios
+C9 Ajuste al tamaño Factor práctico Si el estilo presupone Un solo equipo de 3 a 5
+del equipo varios equipos personas
+autónomos
+C10 Facilidad de Factor práctico Frecuencia y riesgo de Entregas incrementales
+despliegue publicar cambios durante el semestre
+Los criterios C1 a C6 siguen la estructura de características de ISO/IEC 25010:2011 (ISO, 2011). Los
+criterios C7 a C10 retoman las características operativas con que Richards y Ford (2020) califican cada
+estilo (simplicidad, costo total, despliegue) y la relación entre arquitectura y organización del equipo que
+discuten Bass et al. (2021).
+Pregunta abierta: confirmar el tamaño exacto del equipo y ajustar C9 si es necesario.
+2. Fichas de estilos arquitectónicos
+Se consultaron cinco estilos que organizan un sistema de formas realmente distintas: por capas técnicas
+(capas), por módulos de negocio en una sola unidad desplegable (monolito modular), por servicios
+desplegables por separado (microservicios), por eventos asíncronos (orientada a eventos) y por puertos
+hacia un núcleo de dominio aislado (hexagonal). Cada afirmación de las fichas cita su fuente; los
+diagramas están escritos en Mermaid para poder entregarlos como código fuente.
+2.1 Arquitectura en capas (N-capas)
+Campo Contenido
+Descripción Organiza el sistema en capas jerárquicas; cada capa ofrece servicios a la
+capa superior y usa solo los de la capa inferior (Garlan y Shaw, 1994). En
+aplicaciones web las capas típicas son presentación (UI), lógica de
+negocio (BLL) y acceso a datos (DAL) (Microsoft, s.f.).
+Elementos Capas: presentación, negocio, persistencia y base de datos.
+
+===== PAGE 3 =====
+Campo Contenido
+Conectores Llamadas a procedimiento entre capas adyacentes; la UI no debe llamar
+directamente a la DAL (Microsoft, s.f.).
+Favorece Separación de responsabilidades y organización del código; reemplazo
+de la implementación de una capa sin afectar a las demás (Garlan y
+Shaw, 1994; Microsoft, s.f.). Simplicidad y bajo costo, por ser el estilo
+más conocido (Richards y Ford, 2020).
+Compromete Las dependencias apuntan hacia abajo, así que la lógica de negocio
+depende del acceso a datos y probarla suele exigir una base de datos de
+prueba (Microsoft, s.f.). Se despliega y escala como una sola unidad:
+cambiar un componente obliga a probar y desplegar toda la aplicación
+(Microsoft, s.f.). Pasar por varias capas puede costar desempeño (Garlan
+y Shaw, 1994).
+Cuándo conviene Aplicaciones pequeñas o medianas, con presupuesto y tiempo
+ajustados, y equipos que conocen el estilo (Richards y Ford, 2020).
+Cuándo no Sistemas que necesitan alta escalabilidad, elasticidad o despliegues
+independientes por partes (Richards y Ford, 2020; Microsoft, s.f.).
+Ejemplo real Los protocolos de comunicación en capas (modelo ISO OSI), citados por
+Garlan y Shaw (1994) como el ejemplo más conocido: cada capa abstrae
+la comunicación a un nivel distinto, desde la conexión física hasta la
+aplicación, y puede cambiar sin afectar a las otras. En la web, la
+aplicación de referencia eShopOnWeb de Microsoft se presenta frente
+al modelo tradicional de N-capas para ilustrar sus límites (Microsoft,
+s.f.).
+2.2 Monolito modular
+Campo Contenido
+Descripción Una sola unidad desplegable dividida internamente en módulos por
+dominio de negocio, con fronteras estrictas entre ellos. Shopify lo
+adoptó para lograr “más modularidad sin aumentar el número de
+unidades de despliegue” (Westeinde, 2019). Corresponde a la partición
+por dominio, frente a la partición técnica de las capas (Richards y Ford,
+2020).
+Elementos Módulos de dominio (cada uno con sus propias capas internas), una
+base de datos compartida o con esquemas por módulo.
+
+===== PAGE 4 =====
+Campo Contenido
+Conectores Llamadas en proceso a través de la interfaz pública de cada módulo;
+dependencias declaradas entre módulos (Westeinde, 2019).
+Favorece Modularidad y mantenibilidad por dominio; mantiene la simplicidad de
+despliegue, prueba y desempeño de un monolito, sin las llamadas de
+red de los microservicios (Westeinde, 2019).
+Compromete Escala como una sola unidad; una falla grave puede afectar a todo el
+proceso; las fronteras se degradan si no se vigilan con herramientas o
+revisiones (Westeinde, 2019).
+Cuándo conviene Cuando el monolito se vuelve difícil de cambiar pero los microservicios
+traerían más costo que beneficio; según Westeinde (2019), la
+arquitectura correcta depende de la etapa de crecimiento del sistema.
+Cuándo no Cuando partes del sistema necesitan escalar o desplegarse de forma
+independiente, o cuando varios equipos autónomos trabajan en
+paralelo.
+Ejemplo real Shopify, uno de los mayores códigos en Ruby on Rails, con más de mil
+desarrolladores durante más de una década. Su monolito era difícil de
+cambiar (cambios pequeños rompían pruebas no relacionadas), pero los
+microservicios añadían pipelines separados, infraestructura y latencia
+de red. Lo reorganizó en componentes con fronteras estrictas dentro del
+mismo despliegue (Westeinde, 2019).
+2.3 Microservicios
+Campo Contenido
+Descripción Construye una aplicación como un conjunto de servicios pequeños,
+cada uno en su propio proceso, organizados por capacidades de negocio
+y desplegables de forma independiente mediante automatización (Lewis
+y Fowler, 2014).
+Elementos Servicios por capacidad de negocio, cada uno con sus propios datos
+(gestión descentralizada de datos); API gateway; infraestructura de
+despliegue y monitoreo.
+Conectores Llamadas remotas (HTTP/REST, RPC) o mensajería ligera: “endpoints
+inteligentes y tuberías tontas” (Lewis y Fowler, 2014).
+Favorece Despliegue independiente, escalabilidad por servicio, aislamiento de
+fallos cuando se diseña para la falla, y evolución del diseño (Lewis y
+Fowler, 2014; Richards y Ford, 2020).
+
+===== PAGE 5 =====
+Campo Contenido
+Compromete Las llamadas remotas son más costosas que las llamadas en proceso; las
+transacciones distribuidas son difíciles y llevan a consistencia eventual;
+operar muchos servicios exige herramientas y monitoreo; refactorizar
+entre servicios y probar es más difícil (Lewis y Fowler, 2014). Es el estilo
+de mayor costo y menor simplicidad (Richards y Ford, 2020).
+Cuándo conviene Sistemas grandes, con varios equipos que necesitan desplegar por
+separado y partes con demandas de escala muy distintas.
+Cuándo no Equipos pequeños o sin experiencia en automatización y operación: el
+resultado depende mucho de la habilidad del equipo (Lewis y Fowler,
+2014).
+Ejemplo real Netflix migró entre 2008 y 2016 de una aplicación monolítica a cientos
+de microservicios en la nube. La motivación fue una corrupción de base
+de datos en 2008 que le impidió enviar DVD durante tres días:
+necesitaba eliminar puntos únicos de falla escalados verticalmente y
+crecer con la elasticidad de la nube (Izrailevsky et al., 2016).
+2.4 Arquitectura orientada a eventos
+Campo Contenido
+Descripción Los componentes no se invocan directamente: anuncian eventos y otros
+componentes registrados reaccionan a ellos (invocación implícita)
+(Garlan y Shaw, 1994). Abarca patrones distintos: notificación de
+eventos, transferencia de estado en el evento, event sourcing y CQRS
+(Fowler, 2017).
+Elementos Productores, consumidores (procesadores de eventos), canales o
+tópicos, y un broker o mediador de eventos (Richards y Ford, 2020).
+Conectores Publicación/suscripción asíncrona a través del broker.
+Favorece Bajo acoplamiento entre productor y consumidor; es fácil agregar
+consumidores sin cambiar al productor (Garlan y Shaw, 1994; Fowler,
+2017). Alto rendimiento y escalabilidad en flujos de alto volumen (Kreps
+et al., 2011; Richards y Ford, 2020).
+Compromete El flujo lógico “no está explícito en ningún texto del programa”, lo que
+dificulta depurar y modificar (Fowler, 2017). El productor no sabe quién
+responderá ni en qué orden, y razonar sobre la corrección es difícil
+(Garlan y Shaw, 1994). Entregas “al menos una vez” pueden duplicar
+mensajes y el orden solo se garantiza por partición (Kreps et al., 2011).
+
+===== PAGE 6 =====
+Campo Contenido
+Cuándo conviene Flujos de alto volumen, procesamiento en tiempo real o muchos
+consumidores independientes de los mismos hechos.
+Cuándo no Flujos transaccionales simples que requieren respuesta inmediata y
+consistencia fuerte, o equipos sin experiencia en sistemas asíncronos.
+Ejemplo real LinkedIn creó Kafka porque sus datos de actividad y métricas superaban
+el tamaño de sus datos “reales”, y necesitaba alimentar a la vez analítica
+fuera de línea (Hadoop) y aplicaciones en tiempo real (relevancia de
+búsqueda, recomendaciones). Kafka manejaba cerca de mil millones de
+mensajes diarios con unos 10 segundos de latencia de extremo a
+extremo (Kreps et al., 2011).
+2.5 Arquitectura hexagonal (puertos y adaptadores)
+Campo Contenido
+Descripción Busca que la aplicación pueda ser conducida igual por usuarios,
+programas, pruebas automatizadas o scripts, y desarrollarse y probarse
+aislada de sus bases de datos y dispositivos (Cockburn, 2005). Las
+dependencias apuntan hacia el núcleo de dominio; Microsoft (s.f.) la
+agrupa con la arquitectura limpia y la de cebolla.
+Elementos Núcleo de aplicación (dominio); puertos primarios o de entrada
+(conducen la aplicación) y secundarios o de salida (la aplicación los
+conduce, p. ej., la base de datos); adaptadores específicos de cada
+tecnología (Cockburn, 2005).
+Conectores Interfaces (puertos) implementadas por adaptadores e inyectadas en
+tiempo de ejecución (Microsoft, s.f.).
+Favorece Facilidad de prueba: pruebas de regresión sin interfaz ni base de datos;
+reemplazo de adaptadores sin tocar la lógica de negocio (Cockburn,
+2005). Netflix reportó unas 3.000 pruebas en cerca de 100 segundos
+(Svrtan y Makagon, 2020).
+Compromete Más interfaces, mapeos entre modelos e indirección que un diseño en
+capas simple; no resuelve por sí misma la escalabilidad ni el despliegue,
+porque organiza el interior de una aplicación (valoración del equipo con
+base en Cockburn, 2005, y Microsoft, s.f.).
+Cuándo conviene Cuando las fuentes de datos o integraciones externas pueden cambiar, o
+cuando la lógica de negocio debe probarse a fondo y de forma aislada.
+
+===== PAGE 7 =====
+Campo Contenido
+Cuándo no Aplicaciones casi solo CRUD, con poca lógica de negocio, donde la
+indirección añade costo sin beneficio.
+Ejemplo real El equipo Studio Workflows de Netflix la usó porque sus datos venían de
+un monolito que se dividiría en microservicios en una fecha
+desconocida. Gracias a ella, cambió una lectura de una API JSON a una
+fuente GraphQL en 2 horas con un cambio de configuración de una
+línea, sin tocar la lógica de negocio (Svrtan y Makagon, 2020).
+3. Cuadro comparativo
+El monolito modular y las capas son los únicos estilos que salen bien en los cuatro factores prácticos (C7
+a C10). Entre ellos, el monolito modular gana en mantenibilidad por dominio, que es el criterio decisivo
+para agregar el módulo de pedidos. En todas las filas, Alta significa “favorable para Secret Bite Web”.
+Cada celda se sustenta en la ficha correspondiente de la sección 2.
+Criterio Capas Monolito Microservicios Orientada a Hexagonal
+modular eventos
+C1 Eficiencia Media: el paso Alta: Media: llamadas Alta en Media: algo
+de desempeño por capas tiene llamadas en remotas más flujos de más de
+costo proceso costosas alto indirección
+volumen
+C2 Baja: escala Baja: escala Alta: por servicio Alta Baja: depende
+Escalabilidad como un todo como un del despliegue
+todo
+C3 Fiabilidad Baja: un solo Baja: un solo Alta, si se diseña Media: Baja: depende
+proceso proceso para la falla desacople, del despliegue
+pero con
+duplicados y
+orden por
+partición
+C4 Seguridad No diferencia: Igual Igual, con más Igual Igual
+se logra con superficie
+tácticas expuesta por
+(autenticación, cada servicio en
+autorización, red
+cifrado) en
+cualquier estilo
+
+===== PAGE 8 =====
+Criterio Capas Monolito Microservicios Orientada a Hexagonal
+modular eventos
+C5 Media: partición Alta: Alta, pero Media: flujo Alta:
+Mantenibilida técnica, sin fronteras por refactorizar entre implícito, adaptadores
+d fronteras de dominio servicios es caro difícil de intercambiable
+negocio seguir s
+C6 Facilidad de Media: la lógica Media Baja: pruebas Baja: difícil Alta: núcleo
+prueba depende de la entre servicios razonar probado sin
+BD sobre el BD ni UI
+orden
+C7 Simplicidad Alta Alta Baja Baja Media
+C8 Costo bajo Alta: un Alta: un Baja: muchos Media: Alta: un
+de operación despliegue despliegue servicios y requiere despliegue
+monitoreo broker
+C9 Ajuste a un Alta Alta Baja: depende Media Alta
+equipo mucho del
+pequeño equipo
+C10 Facilidad Baja: todo se Baja: todo se Alta: despliegue Media Baja: depende
+de despliegue redespliega redespliega independiente del despliegue
+La fila C4 se valora como neutral porque la seguridad se obtiene sobre todo con tácticas que se aplican
+en cualquier estilo (Bass et al., 2021). La hexagonal organiza el interior de una aplicación, por eso en C2,
+C3 y C10 hereda el comportamiento del estilo de despliegue con que se combine.
+4. Escenarios de calidad del sistema
+Los siete escenarios más importantes de Secret Bite Web siguen la estructura de seis partes de Bass et al.
+(2021): fuente del estímulo, estímulo, artefacto, entorno, respuesta y medida de la respuesta. Las cifras
+de las medidas son una propuesta: deben ajustarse a los requisitos no funcionales del ERS (IEEE 830)
+del proyecto antes de entregar.
+ID Atributo Fuente Estímulo Artefacto Entorno Respuesta Medida
+EC1 Desempeñ Clientes 500 votos Módulo Carga pico Registra 95 % de las
+o registrado concurrent de cada voto solicitudes
+s es en la votación y y confirma responden en
+última hora API al usuario 2 s o menos; 0
+antes del votos perdidos
+cierre de la
+votación
+mensual
+
+===== PAGE 9 =====
+ID Atributo Fuente Estímulo Artefacto Entorno Respuesta Medida
+EC2 Desempeñ Cliente Confirma Módulo Operación Guarda el Confirmación
+o un pedido de normal pedido y en 2 s o
+a domicilio pedidos (hora de lo muestra menos (p95);
+almuerzo en el pedido visible
+o cena) panel del en el panel en
+restaurant 10 s o menos
+e
+EC3 Disponibili Falla El proceso Servidor Horario de Detecta la Servicio
+dad interna de la de servicio falla y restablecido
+aplicación aplicación (11:00 a reinicia el en 5 min o
+se cae 23:00) servicio menos;
+automátic disponibilidad
+amente mensual de al
+menos 99 %
+en horario de
+servicio
+EC4 Seguridad Usuario Intenta Módulo Votación Rechaza el 100 % de los
+(integrida autenticad votar por de abierta voto y votos
+d) o segunda votación registra el duplicados
+vez en el intento rechazados y
+mismo mes registrados
+EC5 Seguridad Usuario Intenta API de Operación Niega el 0 accesos
+(confidenc no consultar pedidos normal acceso indebidos en
+ialidad) autorizado pedidos o (401/403) las pruebas de
+direcciones seguridad
+de otro
+cliente
+EC6 Modificabi Equipo de Agrega el Código Tiempo de Integra el 0 archivos
+lidad desarrollo módulo de fuente desarrollo módulo modificados
+pedidos sin en el módulo
+después cambiar el de votación;
+del MVP de de todas sus
+votación votación pruebas
+siguen
+pasando
+EC7 Facilidad Probador Ejecuta las Núcleo de Integració Ejecuta las Suite en 2 min
+de prueba del equipo pruebas cada n continua pruebas o menos; al
+unitarias módulo sin base menos 70 %
+de las de cobertura
+
+===== PAGE 10 =====
+ID Atributo Fuente Estímulo Artefacto Entorno Respuesta Medida
+reglas de de datos de la lógica de
+negocio real negocio
+(un voto
+por mes,
+estados del
+pedido)
+Tensiones entre atributos. EC1 y EC3 empujan hacia estilos distribuidos (escalar y aislar fallos), mientras
+que la simplicidad, el costo y el tamaño del equipo (C7 a C9) empujan hacia un solo despliegue. EC6 y
+EC7 piden fronteras internas y una lógica aislada, que un diseño en capas puro no da. La decisión de la
+sección 5 resuelve esa tensión.
+5. Estilo seleccionado y justificación
+El equipo elige una combinación de estilos: un monolito modular como estilo principal, desplegado
+como cliente-servidor (SPA en el navegador + API REST), con capas dentro de cada módulo y puertos y
+adaptadores (hexagonal) solo en la frontera con la persistencia y con los servicios externos.
+5.1 Justificación frente a los escenarios
+Escenario Cómo lo atiende el estilo elegido
+EC1, EC2 Desempeño Las llamadas entre módulos son en proceso, sin latencia de red
+(Westeinde, 2019). Si la API es sin estado, el pico de votación se
+atiende con varias instancias detrás de un balanceador
+(Microsoft, s.f.).
+EC3 Disponibilidad Monitoreo de salud y reinicio automático del proceso; mínimo
+dos instancias en horario de servicio. Es un compromiso
+aceptado (ver 5.3).
+EC4, EC5 Seguridad Tácticas transversales: autenticación, autorización por recurso y
+una restricción de unicidad (usuario, mes) en la base de datos
+(Bass et al., 2021).
+EC6 Modificabilidad Votación y Pedidos son módulos con fronteras explícitas:
+agregar Pedidos no toca Votación, como en Shopify (Westeinde,
+2019).
+EC7 Facilidad de prueba Los repositorios son puertos con adaptadores intercambiables:
+las reglas de negocio se prueban con adaptadores en memoria,
+sin base de datos (Cockburn, 2005; Microsoft, s.f.).
+
+===== PAGE 11 =====
+5.2 Alternativas descartadas
+Alternativa Por qué se descarta
+Capas puras Su partición es técnica: votación y pedidos
+quedarían mezclados en cada capa, lo que debilita
+EC6. Además, la lógica depende de la base de
+datos, lo que debilita EC7 (Microsoft, s.f.).
+Microservicios Sus ventajas (escala por servicio, despliegue
+independiente) no compensan su costo para un
+equipo pequeño en un semestre: operación,
+monitoreo, consistencia eventual y pruebas entre
+servicios (Lewis y Fowler, 2014; Richards y Ford,
+2020). Los picos de EC1 se atienden escalando el
+monolito completo.
+Orientada a eventos como estilo principal El volumen de Secret Bite Web no se acerca al que
+justificó este estilo en LinkedIn (Kreps et al., 2011).
+Su flujo implícito complicaría la depuración y las
+pruebas (Fowler, 2017).
+Hexagonal en todo el sistema Su indirección no aporta en las partes que son casi
+solo CRUD (menú, perfil). Se aplica solo donde hay
+cambio esperado: persistencia e integraciones.
+5.3 Compromisos que el equipo acepta
+• Escala como un todo: si solo la votación tiene picos, igual se replica todo el sistema (Microsoft,
+s.f.).
+• Un solo proceso: una falla grave afecta a la votación y a los pedidos a la vez. Se mitiga con
+reinicio automático y dos instancias.
+• Despliegue único: un cambio en Pedidos obliga a redesplegar todo y a correr todas las pruebas.
+• Disciplina de fronteras: los módulos solo se comunican por su interfaz pública; se verifica en
+revisión de código, porque las fronteras se degradan si no se vigilan (Westeinde, 2019).
+• Ruta de evolución: si la votación creciera mucho, su módulo podría extraerse como servicio,
+porque ya tiene fronteras y datos propios.
+5.4 Diagrama de la arquitectura
+flowchart TB
+U["Cliente web (SPA en el navegador)"] -- "HTTPS / JSON" --> LB["Balanceador de
+carga"]
+subgraph API["API REST – monolito modular (N instancias sin estado)"]
+direction LR
+subgraph AUTH["Módulo Usuarios y autenticación"]
+A1["Controlador"] --> A2["Servicio"] --> A3["Puerto repositorio"]
+end
+subgraph VOT["Módulo Votación"]
+
+===== PAGE 12 =====
+V1["Controlador"] --> V2["Servicio"] --> V3["Puerto repositorio"]
+end
+subgraph MEN["Módulo Menú"]
+M1["Controlador"] --> M2["Servicio"] --> M3["Puerto repositorio"]
+end
+subgraph PED["Módulo Pedidos"]
+P1["Controlador"] --> P2["Servicio"] --> P3["Puerto repositorio"]
+end
+V2 -. "interfaz pública" .-> M2
+P2 -. "interfaz pública" .-> M2
+V2 -. "interfaz pública" .-> A2
+P2 -. "interfaz pública" .-> A2
+ADP["Adaptadores SQL"]
+A3 --> ADP
+V3 --> ADP
+M3 --> ADP
+P3 --> ADP
+end
+LB --> API
+ADP --> DB[("Base de datos relacional<br/>un esquema por módulo")]
+Figura 6. Arquitectura de Secret Bite Web: monolito modular con capas por módulo y puertos hacia la
+persistencia.
+Las flechas punteadas son las únicas dependencias permitidas entre módulos, siempre a través de la
+interfaz pública del servicio. Pendiente de confirmar con el equipo: los nombres de los módulos y la
+tecnología de base de datos del MVP.
+Material de consulta
+Bass, L., Clements, P., & Kazman, R. (2021). Software architecture in practice (4.ª ed.). Addison-Wesley.
+Cockburn, A. (2005). Hexagonal architecture (HaT Technical Report 2005.02).
+https://alistair.cockburn.us/hexagonal-architecture/
+Fowler, M. (2017, 7 de febrero). What do you mean by “event-driven”? martinfowler.com.
+https://martinfowler.com/articles/201701-event-driven.html
+Garlan, D., & Shaw, M. (1994). An introduction to software architecture (CMU-CS-94-166 /
+CMU/SEI-94-TR-21). Carnegie Mellon University.
+https://ocw.mit.edu/courses/16-355j-software-engineering-concepts-fall-2005/4b3577da7baf3801621e
+092a5fa32b92_intro_softarch.pdf
+International Organization for Standardization. (2011). ISO/IEC 25010:2011 — Systems and software
+engineering: Systems and software Quality Requirements and Evaluation (SQuaRE): System and software
+quality models. ISO.
+Izrailevsky, Y., Vlaovic, S., & Meshenberg, R. (2016, 12 de febrero). Completing the Netflix cloud
+migration. Netflix. https://about.netflix.com/en/news/completing-the-netflix-cloud-migration
+Kreps, J., Narkhede, N., & Rao, J. (2011). Kafka: A distributed messaging system for log processing. En
+Proceedings of the NetDB'11 Workshop. Atenas, Grecia.
+https://people.csail.mit.edu/matei/courses/2015/6.S897/readings/kafka.pdf
+
+===== PAGE 13 =====
+Lewis, J., & Fowler, M. (2014, 25 de marzo). Microservices: A definition of this new architectural term.
+martinfowler.com. https://martinfowler.com/articles/microservices.html
+Microsoft. (s.f.). Common web application architectures. En Architect modern web applications with
+ASP.NET Core and Azure. Microsoft Learn. Recuperado el 19 de octubre de 2026, de
+https://learn.microsoft.com/en-us/dotnet/architecture/modern-web-apps-azure/common-web-applicati
+on-architectures
+Richards, M., & Ford, N. (2020). Fundamentals of software architecture: An engineering approach.
+O'Reilly Media.
+Svrtan, D., & Makagon, S. (2020, 10 de marzo). Ready for changes with hexagonal architecture. Netflix
+Technology Blog.
+https://netflixtechblog.com/ready-for-changes-with-hexagonal-architecture-b315ec967749
+Westeinde, K. (2019, 21 de febrero). Deconstructing the monolith: Designing software that maximizes
+developer productivity. Shopify Engineering.
+https://shopify.engineering/deconstructing-monolith-designing-software-maximizes-developer-producti
+vity
+Nota de verificación (para el registro de uso de IA). Las fuentes web se abrieron y contrastaron el 19 de
+octubre de 2026. Los libros de Bass et al. (2021) y Richards y Ford (2020), y la norma ISO/IEC 25010, se
+citan por su contenido general (escenarios de seis partes, tácticas, calificaciones de estilos). Antes de
+entregar, el equipo debe ubicar en ellos el capítulo o la página de cada afirmación.
