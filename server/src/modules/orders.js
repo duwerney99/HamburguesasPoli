@@ -45,8 +45,8 @@ export function installOrderRoutes(app, { db, requireAuth, requireAnyRole, parse
     db.exec('BEGIN IMMEDIATE');
     try {
       const preparedItems = data.items.map(item => {
-        const burger = db.prepare('SELECT id,name,ingredients,price_cop priceCop,active FROM burgers WHERE id=?').get(item.burgerId);
-        if (!burger || !burger.active) throw Object.assign(new Error('BURGER_UNAVAILABLE'), { status: 409, publicMessage: 'Una hamburguesa ya no está disponible.' });
+        const burger = db.prepare('SELECT id,name,ingredients,price_cop priceCop,active,deleted FROM burgers WHERE id=?').get(item.burgerId);
+        if (!burger || !burger.active || burger.deleted) throw Object.assign(new Error('BURGER_UNAVAILABLE'), { status: 409, publicMessage: 'Una hamburguesa ya no está disponible.' });
         const ingredients = burger.ingredients.split(',').map(value => value.trim()).filter(Boolean);
         const allowed = new Set(ingredients.map(value => value.toLocaleLowerCase('es')));
         if (item.removedIngredients.some(value => !allowed.has(value.toLocaleLowerCase('es')))) throw Object.assign(new Error('INVALID_INGREDIENT'), { status: 400, publicMessage: `Solo puedes retirar ingredientes existentes de ${burger.name}.` });

@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import { createDatabase } from '../../src/db.js';
 import { seedDatabase } from '../../src/seed-data.js';
-import { createApp } from '../../src/app.js';
+import { createApp, ACCESS_TOKEN_TTL_SECONDS, REFRESH_TOKEN_TTL_SECONDS } from '../../src/app.js';
 
 function createTestEnvironment() {
   const db = createDatabase(':memory:');
@@ -78,12 +79,66 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
         .send({ email: 'ana@example.com', password: 'PasswordIncorrecto1!' })
         .expect(401);
     });
+
+    it('emite accessToken de 15 minutos y refreshToken de 1 día, permite rotar con /api/auth/refresh y revocar en /api/auth/logout', async () => {
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'cliente@secretbite.co', password: 'Cliente123!' })
+        .expect(200);
+
+      expect(loginRes.body.accessToken).toBeTypeOf('string');
+      expect(loginRes.body.refreshToken).toBeTypeOf('string');
+      expect(loginRes.body.expiresIn).toBe(15 * 60);
+      expect(loginRes.body.refreshExpiresIn).toBe(24 * 60 * 60);
+      expect(ACCESS_TOKEN_TTL_SECONDS).toBe(900);
+      expect(REFRESH_TOKEN_TTL_SECONDS).toBe(86400);
+
+      const accessPayload = jwt.decode(loginRes.body.accessToken);
+      const refreshPayload = jwt.decode(loginRes.body.refreshToken);
+      expect(accessPayload.exp - accessPayload.iat).toBe(15 * 60);
+      expect(refreshPayload.exp - refreshPayload.iat).toBe(24 * 60 * 60);
+
+      // No permite usar el refreshToken directamente como Bearer accessToken
+      await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${loginRes.body.refreshToken}`)
+        .expect(401);
+
+      // Rota tokens usando /api/auth/refresh
+      const refreshed = await request(app)
+        .post('/api/auth/refresh')
+        .send({ refreshToken: loginRes.body.refreshToken })
+        .expect(200);
+
+      expect(refreshed.body.accessToken).toBeTypeOf('string');
+      expect(refreshed.body.refreshToken).toBeTypeOf('string');
+      expect(refreshed.body.refreshToken).not.toBe(loginRes.body.refreshToken);
+
+      // El refreshToken anterior queda revocado y no puede reutilizarse
+      await request(app)
+        .post('/api/auth/refresh')
+        .send({ refreshToken: loginRes.body.refreshToken })
+        .expect(401);
+
+      // Al cerrar sesión se revoca el nuevo refreshToken
+      await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${refreshed.body.accessToken}`)
+        .send({ refreshToken: refreshed.body.refreshToken })
+        .expect(204);
+
+      await request(app)
+        .post('/api/auth/refresh')
+        .send({ refreshToken: refreshed.body.refreshToken })
+        .expect(401);
+    });
   });
 
   describe('Catálogo de Hamburguesas (/api/burgers)', () => {
     it('permite al ADMIN crear, actualizar y eliminar una hamburguesa sin campaña asociada', async () => {
       const adminToken = await loginAs(app, 'admin@secretbite.co', 'Admin123!');
 
+      const sampleDataImage = `data:image/webp;base64,${'A'.repeat(1200)}`;
       const created = await request(app)
         .post('/api/burgers')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -91,6 +146,7 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
           name: ' Gaucha Especial ',
           description: 'Hamburguesa artesanal con chimichurri y provolone.',
           ingredients: 'Carne Angus, provolone, chimichurri, pan brioche',
+          imageUrl: sampleDataImage,
           priceCop: 35000,
           active: true
         })
@@ -98,6 +154,7 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
 
       const burgerId = created.body.burger.id;
       expect(created.body.burger.name).toBe('Gaucha Especial');
+      expect(created.body.burger.imageUrl).toBe(sampleDataImage);
 
       const updated = await request(app)
         .put(`/api/burgers/${burgerId}`)
@@ -117,6 +174,31 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
         .delete(`/api/burgers/${burgerId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(204);
+    });
+
+    it('al eliminar una hamburguesa que participa en campaña, la oculta para el cliente en menú y votación', async () => {
+      const adminToken = await loginAs(app, 'admin@secretbite.co', 'Admin123!');
+      const clientToken = await loginAs(app, 'cliente@secretbite.co', 'Cliente123!');
+
+      const activeBefore = (await request(app).get('/api/campaigns/active').expect(200)).body.campaign;
+      const targetBurgerId = activeBefore.candidates[0].id;
+
+      await request(app)
+        .delete(`/api/burgers/${targetBurgerId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(204);
+
+      const publicBurgers = (await request(app).get('/api/burgers').expect(200)).body.burgers;
+      expect(publicBurgers.some(b => b.id === targetBurgerId)).toBe(false);
+
+      const activeAfter = (await request(app).get('/api/campaigns/active').expect(200)).body.campaign;
+      expect(activeAfter.candidates.some(c => c.id === targetBurgerId)).toBe(false);
+
+      await request(app)
+        .post(`/api/campaigns/${activeAfter.id}/votes`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ burgerId: targetBurgerId })
+        .expect(400);
     });
   });
 
@@ -200,11 +282,17 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
       const active = (await request(app).get('/api/campaigns/active').expect(200)).body.campaign;
       const chosenBurgerId = active.candidates[1].id;
 
-      await request(app)
+      const voteRes = await request(app)
         .post(`/api/campaigns/${active.id}/votes`)
         .set('Authorization', `Bearer ${clientToken}`)
-        .send({ burgerId: chosenBurgerId })
+        .send({ burgerId: chosenBurgerId, quantity: 4 })
         .expect(201);
+
+      expect(voteRes.body.campaign.userVoteBurgerId).toBe(chosenBurgerId);
+      expect(voteRes.body.campaign.userVoteQuantity).toBe(4);
+      const votedCand = voteRes.body.campaign.candidates.find(c => c.id === chosenBurgerId);
+      expect(votedCand.voteCount).toBe(1);
+      expect(votedCand.desiredQuantity).toBe(4);
 
       const closed = await request(app)
         .post(`/api/campaigns/${active.id}/close`)
@@ -212,6 +300,7 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
         .expect(200);
 
       expect(closed.body.winner.id).toBe(chosenBurgerId);
+      expect(closed.body.winner.desiredQuantity).toBe(4);
       expect(closed.body.campaign.lifecycleStatus).toBe('CLOSED');
     });
   });
@@ -312,10 +401,30 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
       expect(stats.body.totals).toHaveProperty('burgers');
 
       const audit = await request(app)
-        .get('/api/admin/audit')
+        .get('/api/admin/audit?page=1&pageSize=5&entityType=USER')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
       expect(audit.body.entries.some(e => e.action === 'USER_ROLE_CHANGED')).toBe(true);
+      expect(audit.body.pagination).toMatchObject({
+        page: 1,
+        pageSize: 5
+      });
+
+      const staffRes = await request(app)
+        .get('/api/admin/users?scope=STAFF&page=1&pageSize=5')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+      expect(staffRes.body.users.every(u => u.role === 'ADMIN' || u.role === 'CHEF')).toBe(true);
+
+      const clientsRes = await request(app)
+        .get('/api/admin/clients?page=1&pageSize=5')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+      expect(clientsRes.body.clients.every(u => u.role === 'CLIENT')).toBe(true);
+      expect(clientsRes.body.pagination).toMatchObject({
+        page: 1,
+        pageSize: 5
+      });
     });
   });
 });

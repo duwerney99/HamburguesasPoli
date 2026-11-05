@@ -3,6 +3,7 @@ import request from 'supertest';
 import { createDatabase } from '../src/db.js';
 import { seedDatabase } from '../src/seed-data.js';
 import { createApp } from '../src/app.js';
+import { ADMIN_ROUTES, normalizePath } from '../../client/src/router.js';
 
 function fixture() {
   const db = createDatabase(':memory:');
@@ -99,4 +100,50 @@ test('el administrador puede asignar el rol CHEF y queda auditado', async () => 
     expect(response.body.user.role).toBe('CHEF');
     expect(db.prepare("SELECT COUNT(*) total FROM audit_logs WHERE action='USER_ROLE_CHANGED'").get().total).toBe(1);
   } finally { db.close(); }
+});
+
+test('el dashboard administrativo entrega KPIs y series para gráficas y el router normaliza las rutas de módulos', async () => {
+  const { db, app } = fixture();
+  try {
+    const adminToken = await login(app, 'admin@secretbite.co', 'Admin123!');
+    const statsRes = await request(app)
+      .get('/api/admin/stats')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(statsRes.body.totals).toEqual(
+      expect.objectContaining({
+        users: expect.any(Number),
+        staff: expect.any(Number),
+        burgers: expect.any(Number),
+        campaigns: expect.any(Number),
+        votes: expect.any(Number),
+        desiredBurgers: expect.any(Number),
+        orders: expect.any(Number),
+        totalOrders: expect.any(Number),
+        revenueCop: expect.any(Number)
+      })
+    );
+    expect(statsRes.body.charts).toEqual(
+      expect.objectContaining({
+        ordersByStatus: expect.any(Array),
+        topBurgers: expect.any(Array),
+        auditByEntity: expect.any(Array)
+      })
+    );
+
+    expect(normalizePath('/admin')).toBe('/admin/dashboard');
+    expect(normalizePath('/admin/')).toBe('/admin/dashboard');
+    expect(normalizePath('/admin/clientes/')).toBe('/admin/clientes');
+    expect(ADMIN_ROUTES.map(r => r.path)).toEqual([
+      '/admin/dashboard',
+      '/admin/productos',
+      '/admin/votaciones',
+      '/admin/usuarios',
+      '/admin/clientes',
+      '/admin/trazabilidad'
+    ]);
+  } finally {
+    db.close();
+  }
 });

@@ -1,102 +1,686 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api } from './api.js';
+import {
+  Link,
+  Navigate,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate
+} from 'react-router-dom';
+import {
+  api,
+  clearSessionTokens,
+  hasSessionTokens,
+  logoutSession,
+  saveSessionTokens
+} from './api.js';
 import Orders from './features/Orders.jsx';
 import Kitchen from './features/Kitchen.jsx';
-import AdminExtras from './features/AdminExtras.jsx';
+import AdminLayout from './features/admin/AdminLayout.jsx';
+import { formatCop } from './features/admin/adminShared.jsx';
+import { AlertBanner, LoaderCard, Spinner, ToastProvider, useToast } from './ui/Feedback.jsx';
 
 function useCountdown(endsAt) {
   const [now, setNow] = useState(Date.now());
-  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
   const remaining = Math.max(0, Date.parse(endsAt || 0) - now);
-  const parts = { days: Math.floor(remaining / 86400000), hours: Math.floor(remaining / 3600000) % 24, minutes: Math.floor(remaining / 60000) % 60, seconds: Math.floor(remaining / 1000) % 60 };
-  return { remaining, label: `${parts.days}d ${String(parts.hours).padStart(2, '0')}h ${String(parts.minutes).padStart(2, '0')}m ${String(parts.seconds).padStart(2, '0')}s` };
+  const parts = {
+    days: Math.floor(remaining / 86400000),
+    hours: Math.floor(remaining / 3600000) % 24,
+    minutes: Math.floor(remaining / 60000) % 60,
+    seconds: Math.floor(remaining / 1000) % 60
+  };
+  return {
+    remaining,
+    parts,
+    label: `${parts.days}d ${String(parts.hours).padStart(2, '0')}h ${String(parts.minutes).padStart(2, '0')}m ${String(parts.seconds).padStart(2, '0')}s`
+  };
 }
 
-function Header({ user, view, setView, logout }) {
-  return <header className="site-header"><a className="brand" href="#inicio" onClick={() => setView('home')} aria-label="Secret Bite, inicio"><span className="brand-mark">SB</span><span>Secret <b>Bite</b><small>Medellín · Burger club</small></span></a>
-    <nav aria-label="Navegación principal"><button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')}>Votación</button>{user?.role === 'CLIENT' && <button className={view === 'orders' ? 'active' : ''} onClick={() => setView('orders')}>Pedidos</button>}{['CHEF', 'ADMIN'].includes(user?.role) && <button className={view === 'kitchen' ? 'active' : ''} onClick={() => setView('kitchen')}>Cocina</button>}{user?.role === 'ADMIN' && <button className={view === 'admin' ? 'active' : ''} onClick={() => setView('admin')}>Panel admin</button>}</nav>
-    <div className="session">{user ? <><span className="user-name">Hola, {user.name.split(' ')[0]}</span><button className="button ghost" onClick={logout}>Salir</button></> : <button className="button small" onClick={() => setView('auth')}>Ingresar</button>}</div>
-  </header>;
+function Header({ user, logout }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const roleBadge = {
+    CLIENT: 'Club Member',
+    CHEF: 'Cocina',
+    ADMIN: 'Admin'
+  };
+
+  const isAdmin = location.pathname.startsWith('/admin');
+
+  return (
+    <header className="site-header">
+      <Link className="brand" to="/" aria-label="Secret Bite, inicio">
+        <span className="brand-mark">SB</span>
+        <span>
+          Secret <b>Bite</b>
+          <small>Medellín · Burger club</small>
+        </span>
+      </Link>
+      <nav aria-label="Navegación principal">
+        <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
+          Votación
+        </NavLink>
+        {user?.role === 'CLIENT' && (
+          <NavLink to="/pedidos" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Pedidos
+          </NavLink>
+        )}
+        {['CHEF', 'ADMIN'].includes(user?.role) && (
+          <NavLink to="/cocina" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Cocina
+          </NavLink>
+        )}
+        {user?.role === 'ADMIN' && (
+          <NavLink
+            to={isAdmin ? location.pathname : '/admin/dashboard'}
+            className={() => (isAdmin ? 'active' : '')}
+          >
+            Panel admin
+          </NavLink>
+        )}
+      </nav>
+      <div className="session">
+        {user ? (
+          <>
+            <div className="user-pill">
+              <span className="user-avatar" aria-hidden="true">
+                {user.name.charAt(0).toUpperCase()}
+              </span>
+              <span className="user-name">
+                Hola, <strong>{user.name.split(' ')[0]}</strong>
+                <small>{roleBadge[user.role] || user.role}</small>
+              </span>
+            </div>
+            <button className="button ghost small" onClick={logout}>
+              Salir
+            </button>
+          </>
+        ) : (
+          <button className="button small" onClick={() => navigate('/auth')}>
+            Ingresar al club
+          </button>
+        )}
+      </div>
+    </header>
+  );
 }
 
 function Auth({ onAuth, goHome }) {
   const [register, setRegister] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [status, setStatus] = useState({ loading: false, error: '' });
+  const { notify } = useToast();
+
   async function submit(event) {
-    event.preventDefault(); setStatus({ loading: true, error: '' });
+    event.preventDefault();
+    setStatus({ loading: true, error: '' });
     try {
-      const data = await api(`/auth/${register ? 'register' : 'login'}`, { method: 'POST', body: JSON.stringify(form) });
+      const data = await api(`/auth/${register ? 'register' : 'login'}`, {
+        method: 'POST',
+        body: JSON.stringify(form)
+      });
+      notify({
+        type: 'success',
+        title: register ? 'Cuenta creada' : 'Sesión iniciada',
+        message: `Bienvenido a Secret Bite, ${data.user.name.split(' ')[0]}.`
+      });
       onAuth(data);
-    } catch (error) { setStatus({ loading: false, error: error.message }); }
+    } catch (error) {
+      setStatus({ loading: false, error: error.message });
+      notify({
+        type: 'error',
+        title: 'Error de autenticación',
+        message: error.message
+      });
+    }
   }
-  return <main className="auth-page"><section className="auth-copy"><span className="eyebrow">ACCESO A LA COMUNIDAD</span><h1>Tu voto cambia<br /><em>el próximo menú.</em></h1><p>Una cuenta, un voto, una burger ganadora. Sin puntos, compras ni pasos innecesarios.</p><img src="/assets/secret-bite-mark.jpeg" alt="Ilustración del agente secreto de Secret Bite" /></section>
-    <section className="auth-card"><button className="back-link" onClick={goHome}>← Volver</button><h2>{register ? 'Crea tu cuenta' : 'Bienvenido de vuelta'}</h2><p>{register ? 'Únete y participa en la campaña activa.' : 'Ingresa para emitir o consultar tu voto.'}</p>
-      <form onSubmit={submit}>{register && <label>Nombre completo<input autoComplete="name" required minLength="2" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label>}<label>Correo electrónico<input type="email" autoComplete="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></label><label>Contraseña<input type="password" autoComplete={register ? 'new-password' : 'current-password'} required minLength="8" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></label>
-        {status.error && <div className="alert error" role="alert">{status.error}</div>}<button className="button full" disabled={status.loading}>{status.loading ? 'Procesando…' : register ? 'Crear cuenta' : 'Ingresar'}</button></form>
-      <button className="switch-auth" onClick={() => { setRegister(!register); setStatus({ loading: false, error: '' }); }}>{register ? 'Ya tengo cuenta' : 'Quiero registrarme'}</button></section></main>;
+
+  return (
+    <main className="auth-page">
+      <section className="auth-copy">
+        <span className="eyebrow">ACCESO A LA COMUNIDAD</span>
+        <h1>
+          Tu voto cambia
+          <br />
+          <em>el próximo menú.</em>
+        </h1>
+        <p>Una cuenta, un voto, una burger ganadora. Sin puntos, compras ni pasos innecesarios.</p>
+        <div className="auth-showcase">
+          <img src="/assets/secret-bite-mark.jpeg" alt="Ilustración del agente secreto de Secret Bite" />
+          <div>
+            <strong>Edición Mensual Medellín</strong>
+            <span>Voto único verificado y pedidos personalizados directo a cocina.</span>
+          </div>
+        </div>
+      </section>
+      <section className="auth-card">
+        <button className="back-link" onClick={goHome}>
+          ← Volver a la campaña
+        </button>
+        <h2>{register ? 'Crea tu cuenta' : 'Bienvenido de vuelta'}</h2>
+        <p>{register ? 'Únete y participa en la campaña activa.' : 'Ingresa para emitir o consultar tu voto.'}</p>
+        <form onSubmit={submit}>
+          {register && (
+            <label>
+              Nombre completo
+              <input
+                autoComplete="name"
+                placeholder="Ej. Camila Restrepo"
+                required
+                minLength="2"
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+              />
+            </label>
+          )}
+          <label>
+            Correo electrónico
+            <input
+              type="email"
+              autoComplete="email"
+              placeholder="tu@correo.com"
+              required
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+            />
+          </label>
+          <label>
+            Contraseña
+            <input
+              type="password"
+              autoComplete={register ? 'new-password' : 'current-password'}
+              placeholder="Mínimo 8 caracteres"
+              required
+              minLength="8"
+              value={form.password}
+              onChange={e => setForm({ ...form, password: e.target.value })}
+            />
+          </label>
+          <AlertBanner
+            type="error"
+            title="No fue posible iniciar sesión"
+            message={status.error}
+            onClose={() => setStatus(s => ({ ...s, error: '' }))}
+          />
+          <button className="button full" disabled={status.loading}>
+            {status.loading ? (
+              <>
+                <Spinner size="sm" label="Procesando autenticación…" />
+                <span>Procesando…</span>
+              </>
+            ) : register ? (
+              'Crear cuenta'
+            ) : (
+              'Ingresar'
+            )}
+          </button>
+        </form>
+        <button
+          className="switch-auth"
+          onClick={() => {
+            setRegister(!register);
+            setStatus({ loading: false, error: '' });
+          }}
+        >
+          {register ? '¿Ya tienes cuenta? Inicia sesión' : '¿Nuevo en Secret Bite? Quiero registrarme'}
+        </button>
+      </section>
+    </main>
+  );
 }
 
-function BurgerCard({ burger, campaign, user, onVote, busy }) {
+function BurgerCard({ burger, campaign, user, onVote, busy, votingBurgerId, isLeader, totalVotes }) {
+  const [quantity, setQuantity] = useState(1);
   const voted = campaign.userVoteBurgerId === burger.id;
   const locked = Boolean(campaign.userVoteBurgerId);
-  return <article className={`burger-card ${voted ? 'selected' : ''}`}><div className="image-wrap"><img src={burger.imageUrl || '/assets/hero-burger.jpeg'} alt={`Hamburguesa ${burger.name}`} loading="lazy" /><span className="vote-badge">{burger.voteCount} {burger.voteCount === 1 ? 'voto' : 'votos'}</span></div><div className="burger-content"><h3>{burger.name}</h3><p>{burger.description}</p><small>{burger.ingredients}</small><button className="button full" disabled={locked || busy} onClick={() => onVote(burger.id)}>{voted ? '✓ Tu elección' : locked ? 'Voto ya emitido' : user ? 'Votar por esta burger' : 'Ingresa para votar'}</button></div></article>;
-}
+  const isVotingThis = busy && votingBurgerId === burger.id;
+  const share = totalVotes > 0 ? Math.round((burger.voteCount / totalVotes) * 100) : 0;
+  const desiredCount = burger.desiredQuantity ?? burger.voteCount ?? 0;
+  const unitPrice = burger.priceCop || 28000;
+  const ingredientList = burger.ingredients
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
 
-function Home({ user, onNeedAuth }) {
-  const [campaign, setCampaign] = useState(null);
-  const [status, setStatus] = useState({ loading: true, error: '', message: '', busy: false });
-  const countdown = useCountdown(campaign?.endsAt);
-  const load = useCallback(async () => { try { const data = await api('/campaigns/active'); setCampaign(data.campaign); setStatus(s => ({ ...s, loading: false, error: '' })); } catch (error) { setStatus(s => ({ ...s, loading: false, error: error.message })); } }, []);
-  useEffect(() => { load(); }, [load, user]);
-  async function vote(burgerId) {
-    if (!user) return onNeedAuth();
-    setStatus(s => ({ ...s, busy: true, error: '', message: '' }));
-    try { const data = await api(`/campaigns/${campaign.id}/votes`, { method: 'POST', body: JSON.stringify({ burgerId }) }); setCampaign(data.campaign); setStatus({ loading: false, busy: false, error: '', message: data.message }); }
-    catch (error) { setStatus(s => ({ ...s, busy: false, error: error.message })); }
+  function updateQuantity(nextValue) {
+    const parsed = Math.min(50, Math.max(1, Number.parseInt(nextValue, 10) || 1));
+    setQuantity(parsed);
   }
-  const leader = useMemo(() => campaign?.candidates?.toSorted((a, b) => b.voteCount - a.voteCount)[0], [campaign]);
-  return <main><section className="hero" id="inicio"><div className="hero-copy"><span className="eyebrow">LA DECISIÓN ESTÁ EN TUS MANOS</span><h1>El próximo clásico<br />lo elige <em>Medellín.</em></h1><p>Explora las recetas candidatas y usa tu único voto. La más votada se convierte en la hamburguesa del próximo mes.</p><div className="hero-actions"><a className="button" href="#candidatas">Ver candidatas</a><span>Votación transparente<br /><b>1 persona · 1 voto</b></span></div></div><div className="hero-photo"><img src="/assets/hero-burger.jpeg" alt="Hamburguesa Secret Bite servida con papas" /><div className="floating-card"><small>Líder provisional</small><strong>{leader?.name || 'Aún por definir'}</strong></div></div></section>
-    <section className="campaign-section" id="candidatas"><div className="section-heading"><div><span className="eyebrow">CAMPAÑA ACTIVA</span><h2>{campaign?.name || 'La próxima favorita'}</h2></div>{campaign && <div className="countdown" aria-live="polite"><small>La votación cierra en</small><strong>{countdown.label}</strong></div>}</div>
-      {status.message && <div className="alert success" role="status">{status.message}</div>}{status.error && <div className="alert error" role="alert">{status.error}</div>}{status.loading ? <div className="loading">Cargando campaña…</div> : campaign && <><div className="burger-grid">{campaign.candidates.map(burger => <BurgerCard key={burger.id} burger={burger} campaign={campaign} user={user} onVote={vote} busy={status.busy} />)}</div><p className="campaign-note">Resultados provisionales visibles en tiempo real. El voto no puede cambiarse después de ser emitido.</p></>}</section>
-    <section className="how"><span className="eyebrow">CÓMO FUNCIONA</span><h2>Tres pasos. Una ganadora.</h2><div><article><b>01</b><h3>Conoce las recetas</h3><p>Revisa ingredientes y propuestas de la campaña.</p></article><article><b>02</b><h3>Emite tu voto</h3><p>Regístrate y elige una sola candidata.</p></article><article><b>03</b><h3>Descubre la ganadora</h3><p>Al cerrar la campaña, la más votada lidera el menú.</p></article></div></section></main>;
+
+  return (
+    <article className={`burger-card ${voted ? 'selected' : ''} ${isLeader ? 'leader' : ''}`}>
+      <div className="image-wrap">
+        <img src={burger.imageUrl || '/assets/hero-burger.jpeg'} alt={`Hamburguesa ${burger.name}`} loading="lazy" />
+        {isLeader && <span className="leader-ribbon">★ Líder actual</span>}
+        <span className="vote-badge">
+          {burger.voteCount} {burger.voteCount === 1 ? 'voto' : 'votos'} · {desiredCount} uds. · {share}%
+        </span>
+      </div>
+      <div className="burger-content">
+        <div className="flex items-start justify-between gap-2">
+          <h3>{burger.name}</h3>
+          <span className="font-mono text-xs font-bold text-brand-amber shrink-0">
+            {formatCop(unitPrice)}
+          </span>
+        </div>
+        <p>{burger.description}</p>
+        <ul className="ingredient-pills" aria-label="Ingredientes">
+          {ingredientList.map(ingredient => (
+            <li key={ingredient}>{ingredient}</li>
+          ))}
+        </ul>
+        <div className="vote-meter" aria-hidden="true">
+          <span style={{ inlineSize: `${Math.max(share, burger.voteCount > 0 ? 8 : 0)}%` }} />
+        </div>
+
+        {user && !locked ? (
+          <div className="vote-quantity-box">
+            <div className="vote-quantity-head">
+              <label htmlFor={`vote-qty-${burger.id}`}>¿Cuántas deseas pedir?</label>
+              <span className="vote-quantity-subtotal">{formatCop(unitPrice * quantity)}</span>
+            </div>
+            <div className="vote-quantity-controls">
+              <div className="vote-stepper" role="group" aria-label={`Cantidad deseada de ${burger.name}`}>
+                <button
+                  type="button"
+                  className="vote-stepper-btn"
+                  disabled={busy || quantity <= 1}
+                  onClick={() => updateQuantity(quantity - 1)}
+                  aria-label="Disminuir cantidad"
+                >
+                  −
+                </button>
+                <input
+                  id={`vote-qty-${burger.id}`}
+                  name={`voteQty-${burger.id}`}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={50}
+                  disabled={busy}
+                  value={quantity}
+                  onChange={e => updateQuantity(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="vote-stepper-btn"
+                  disabled={busy || quantity >= 50}
+                  onClick={() => updateQuantity(quantity + 1)}
+                  aria-label="Aumentar cantidad"
+                >
+                  +
+                </button>
+              </div>
+              <div className="vote-qty-presets" role="group" aria-label="Cantidades rápidas">
+                {[1, 2, 4, 6].map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className={`vote-qty-chip ${quantity === preset ? 'active' : ''}`}
+                    disabled={busy}
+                    onClick={() => setQuantity(preset)}
+                  >
+                    {preset}x
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          user &&
+          voted && (
+            <div className="vote-registered-summary" role="status">
+              <span>Cantidad registrada en tu voto:</span>
+              <strong>
+                {campaign.userVoteQuantity || 1}{' '}
+                {(campaign.userVoteQuantity || 1) === 1 ? 'hamburguesa' : 'hamburguesas'}
+              </strong>
+            </div>
+          )
+        )}
+
+        <button
+          className={`button full ${voted ? 'voted' : ''}`}
+          disabled={locked || busy}
+          onClick={() => onVote(burger.id, quantity)}
+        >
+          {isVotingThis ? (
+            <>
+              <Spinner size="sm" label={`Registrando voto por ${burger.name}`} />
+              <span>Registrando voto…</span>
+            </>
+          ) : voted ? (
+            `✓ Elegida (${campaign.userVoteQuantity || 1} ${(campaign.userVoteQuantity || 1) === 1 ? 'ud.' : 'uds.'})`
+          ) : locked ? (
+            'Voto ya emitido'
+          ) : user ? (
+            `Votar y reservar ${quantity} ${quantity === 1 ? 'burger' : 'burgers'}`
+          ) : (
+            'Ingresa para votar'
+          )}
+        </button>
+      </div>
+    </article>
+  );
 }
 
-function BurgerForm({ onSaved }) {
-  const initial = { name: '', description: '', ingredients: '', imageUrl: '/assets/hero-burger.jpeg', priceCop: 28000, active: true };
-  const [form, setForm] = useState(initial); const [error, setError] = useState('');
-  async function submit(e) { e.preventDefault(); try { await api('/burgers', { method: 'POST', body: JSON.stringify(form) }); setForm(initial); setError(''); onSaved('Hamburguesa creada.'); } catch (err) { setError(err.message); } }
-  return <form className="admin-form" onSubmit={submit}><h3>Nueva hamburguesa</h3><label>Nombre<input required minLength="2" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label><label>Descripción<textarea required minLength="10" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></label><label>Ingredientes separados por coma<textarea required value={form.ingredients} onChange={e => setForm({ ...form, ingredients: e.target.value })} /></label><label>Precio COP<input type="number" min="1000" required value={form.priceCop} onChange={e => setForm({ ...form, priceCop: Number(e.target.value) })} /></label><label>Ruta de imagen<input required value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} /></label>{error && <div className="alert error">{error}</div>}<button className="button">Guardar hamburguesa</button></form>;
-}
+function Home({ user, onNeedAuth, onOrderClick }) {
+  const [campaign, setCampaign] = useState(null);
+  const [status, setStatus] = useState({
+    loading: true,
+    error: '',
+    message: '',
+    busy: false,
+    votingBurgerId: null
+  });
+  const countdown = useCountdown(campaign?.endsAt);
+  const { notify } = useToast();
 
-function CampaignForm({ burgers, onSaved }) {
-  const tomorrow = new Date(Date.now() + 86400000); const nextMonth = new Date(Date.now() + 15 * 86400000);
-  const [form, setForm] = useState({ name: 'Burger del próximo mes', startsAt: new Date().toISOString().slice(0, 16), endsAt: nextMonth.toISOString().slice(0, 16), status: 'DRAFT', burgerIds: [] }); const [error, setError] = useState('');
-  function toggle(id) { setForm(f => ({ ...f, burgerIds: f.burgerIds.includes(id) ? f.burgerIds.filter(item => item !== id) : [...f.burgerIds, id] })); }
-  async function submit(e) { e.preventDefault(); try { await api('/campaigns', { method: 'POST', body: JSON.stringify({ ...form, startsAt: new Date(form.startsAt).toISOString(), endsAt: new Date(form.endsAt).toISOString() }) }); setError(''); onSaved('Campaña creada.'); } catch (err) { setError(err.message); } }
-  return <form className="admin-form" onSubmit={submit}><h3>Nueva campaña</h3><label>Nombre<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label><div className="form-row"><label>Inicio<input type="datetime-local" required value={form.startsAt} onChange={e => setForm({ ...form, startsAt: e.target.value })} /></label><label>Cierre<input type="datetime-local" required value={form.endsAt} min={tomorrow.toISOString().slice(0, 16)} onChange={e => setForm({ ...form, endsAt: e.target.value })} /></label></div><label>Estado<select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option value="DRAFT">Borrador</option><option value="PUBLISHED">Publicada</option></select></label><fieldset><legend>Candidatas (mínimo 2)</legend>{burgers.filter(b => b.active).map(b => <label className="check" key={b.id}><input type="checkbox" checked={form.burgerIds.includes(b.id)} onChange={() => toggle(b.id)} />{b.name}</label>)}</fieldset>{error && <div className="alert error">{error}</div>}<button className="button">Guardar campaña</button></form>;
-}
+  const load = useCallback(async () => {
+    try {
+      const data = await api('/campaigns/active');
+      setCampaign(data.campaign);
+      setStatus(s => ({ ...s, loading: false, error: '' }));
+    } catch (error) {
+      setStatus(s => ({ ...s, loading: false, error: error.message }));
+    }
+  }, []);
 
-function Admin() {
-  const [data, setData] = useState({ burgers: [], stats: null }); const [status, setStatus] = useState({ loading: true, error: '', message: '' });
-  const load = useCallback(async () => { try { const [burgerData, statsData] = await Promise.all([api('/burgers'), api('/admin/stats')]); setData({ burgers: burgerData.burgers, stats: statsData }); setStatus(s => ({ ...s, loading: false, error: '' })); } catch (error) { setStatus({ loading: false, error: error.message, message: '' }); } }, []);
-  useEffect(() => { load(); }, [load]);
-  async function deactivate(burger) { try { await api(`/burgers/${burger.id}`, { method: 'PUT', body: JSON.stringify({ ...burger, active: !burger.active }) }); await load(); } catch (error) { setStatus(s => ({ ...s, error: error.message })); } }
-  async function closeCampaign(id) { try { await api(`/campaigns/${id}/close`, { method: 'POST' }); await load(); } catch (error) { setStatus(s => ({ ...s, error: error.message })); } }
-  const saved = message => { setStatus(s => ({ ...s, message })); load(); };
-  if (status.loading) return <main className="admin-page"><div className="loading">Cargando panel…</div></main>;
-  return <main className="admin-page"><div className="admin-title"><div><span className="eyebrow">BACKOFFICE</span><h1>Centro de control</h1><p>Catálogo, campañas y votos en un solo lugar.</p></div><button className="button ghost" onClick={load}>Actualizar datos</button></div>{status.error && <div className="alert error">{status.error}</div>}{status.message && <div className="alert success">{status.message}</div>}
-    {data.stats && <section className="stats-grid">{Object.entries({ Clientes: data.stats.totals.users, Hamburguesas: data.stats.totals.burgers, Campañas: data.stats.totals.campaigns, Votos: data.stats.totals.votes, Pedidos: data.stats.totals.orders }).map(([label, value]) => <article key={label}><small>{label}</small><strong>{value}</strong></article>)}</section>}
-    <section className="admin-grid"><BurgerForm onSaved={saved} /><CampaignForm burgers={data.burgers} onSaved={saved} /></section>
-    <section className="admin-list"><div className="section-heading"><div><span className="eyebrow">CATÁLOGO</span><h2>Hamburguesas</h2></div></div><div className="table-wrap"><table><thead><tr><th>Nombre</th><th>Ingredientes</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{data.burgers.map(b => <tr key={b.id}><td><strong>{b.name}</strong></td><td>{b.ingredients}</td><td><span className={`status ${b.active ? 'on' : 'off'}`}>{b.active ? 'Activa' : 'Inactiva'}</span></td><td><button className="text-button" onClick={() => deactivate(b)}>{b.active ? 'Desactivar' : 'Activar'}</button></td></tr>)}</tbody></table></div></section>
-    <section className="admin-list"><div className="section-heading"><div><span className="eyebrow">RESULTADOS</span><h2>Campañas</h2></div></div>{data.stats?.campaigns.map(c => <article className="campaign-admin" key={c.id}><div><strong>{c.name}</strong><span className={`status ${c.status === 'ACTIVE' ? 'on' : 'off'}`}>{c.status}</span></div><small>{new Date(c.startsAt).toLocaleDateString('es-CO')} — {new Date(c.endsAt).toLocaleDateString('es-CO')}</small><div className="result-bars">{c.candidates.map(candidate => { const max = Math.max(1, ...c.candidates.map(x => x.voteCount)); return <div key={candidate.id}><span>{candidate.name}<b>{candidate.voteCount}</b></span><i><em style={{ width: `${candidate.voteCount / max * 100}%` }} /></i></div>; })}</div>{c.lifecycleStatus === 'PUBLISHED' && <button className="button small" onClick={() => closeCampaign(c.id)}>Cerrar y elegir ganadora</button>}</article>)}</section><AdminExtras /></main>;
+  useEffect(() => {
+    load();
+  }, [load, user?.id]);
+
+  async function vote(burgerId, quantity = 1) {
+    if (!user) return onNeedAuth();
+    const safeQuantity = Math.min(50, Math.max(1, Number.parseInt(quantity, 10) || 1));
+    setStatus(s => ({ ...s, busy: true, votingBurgerId: burgerId, error: '', message: '' }));
+    try {
+      const data = await api(`/campaigns/${campaign.id}/votes`, {
+        method: 'POST',
+        body: JSON.stringify({ burgerId, quantity: safeQuantity })
+      });
+      setCampaign(data.campaign);
+      setStatus({ loading: false, busy: false, votingBurgerId: null, error: '', message: data.message });
+      notify({
+        type: 'success',
+        title: 'Voto verificado',
+        message: data.message
+      });
+    } catch (error) {
+      setStatus(s => ({ ...s, busy: false, votingBurgerId: null, error: error.message }));
+      notify({
+        type: 'error',
+        title: 'No se pudo registrar el voto',
+        message: error.message
+      });
+    }
+  }
+
+  const visibleCandidates = useMemo(
+    () => (campaign?.candidates || []).filter(item => item.active !== false && !item.deleted),
+    [campaign]
+  );
+
+  const totalVotes = useMemo(
+    () => visibleCandidates.reduce((sum, item) => sum + item.voteCount, 0),
+    [visibleCandidates]
+  );
+
+  const totalDesired = useMemo(
+    () => visibleCandidates.reduce((sum, item) => sum + (item.desiredQuantity ?? item.voteCount ?? 0), 0),
+    [visibleCandidates]
+  );
+
+  const leader = useMemo(
+    () => visibleCandidates.toSorted((a, b) => b.voteCount - a.voteCount)[0],
+    [visibleCandidates]
+  );
+
+  return (
+    <main>
+      <section className="hero" id="inicio">
+        <div className="hero-copy">
+          <span className="eyebrow">LA DECISIÓN ESTÁ EN TUS MANOS</span>
+          <h1>
+            El próximo clásico
+            <br />
+            lo elige <em>Medellín.</em>
+          </h1>
+          <p>
+            Explora las recetas candidatas de autor y usa tu único voto. La más votada entra a la parrilla como la
+            hamburguesa oficial del próximo mes.
+          </p>
+          <div className="hero-actions">
+            <a className="button" href="#candidatas">
+              Ver candidatas
+            </a>
+            {user?.role === 'CLIENT' && (
+              <button className="button ghost" onClick={onOrderClick}>
+                Pedir a domicilio
+              </button>
+            )}
+            <span className="hero-meta">
+              Votación verificada
+              <br />
+              <b>
+                1 persona · 1 voto · {totalVotes} votos ({totalDesired} uds. deseadas)
+              </b>
+            </span>
+          </div>
+        </div>
+        <div className="hero-photo">
+          <img src="/assets/hero-burger.jpeg" alt="Hamburguesa Secret Bite servida con papas" />
+          <div className="floating-card">
+            <span className="pulse-dot" aria-hidden="true" />
+            <div>
+              <small>Líder provisional</small>
+              <strong>{leader?.name || 'Aún por definir'}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="campaign-section" id="candidatas">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">CAMPAÑA ACTIVA</span>
+            <h2>{campaign?.name || 'La próxima favorita'}</h2>
+          </div>
+          {campaign && (
+            <div className="countdown" aria-live="polite" aria-label={`La votación cierra en ${countdown.label}`}>
+              <small>La votación cierra en</small>
+              <div className="countdown-segments">
+                <span>
+                  <strong>{countdown.parts.days}</strong>
+                  <em>días</em>
+                </span>
+                <span>
+                  <strong>{String(countdown.parts.hours).padStart(2, '0')}</strong>
+                  <em>hrs</em>
+                </span>
+                <span>
+                  <strong>{String(countdown.parts.minutes).padStart(2, '0')}</strong>
+                  <em>min</em>
+                </span>
+                <span>
+                  <strong>{String(countdown.parts.seconds).padStart(2, '0')}</strong>
+                  <em>seg</em>
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <AlertBanner
+          type="success"
+          title="Voto registrado"
+          message={status.message}
+          onClose={() => setStatus(s => ({ ...s, message: '' }))}
+        />
+        <AlertBanner
+          type="error"
+          title="No fue posible procesar la votación"
+          message={status.error}
+          onClose={() => setStatus(s => ({ ...s, error: '' }))}
+        />
+
+        {status.loading ? (
+          <LoaderCard
+            title="Cargando campaña activa…"
+            subtitle="Consultando candidatas participantes y escrutinio en tiempo real."
+          />
+        ) : (
+          campaign && (
+            <>
+              <div className="burger-grid">
+                {visibleCandidates.map(burger => (
+                  <BurgerCard
+                    key={burger.id}
+                    burger={burger}
+                    campaign={campaign}
+                    user={user}
+                    onVote={vote}
+                    busy={status.busy}
+                    votingBurgerId={status.votingBurgerId}
+                    isLeader={leader?.id === burger.id && burger.voteCount > 0}
+                    totalVotes={totalVotes}
+                  />
+                ))}
+              </div>
+              <p className="campaign-note">
+                Resultados provisionales visibles en tiempo real. El voto es definitivo y no puede modificarse después
+                de ser emitido.
+              </p>
+            </>
+          )
+        )}
+      </section>
+
+      <section className="how">
+        <span className="eyebrow">CÓMO FUNCIONA</span>
+        <h2>Tres pasos. Una ganadora.</h2>
+        <div>
+          <article>
+            <b>01</b>
+            <h3>Conoce las recetas</h3>
+            <p>Revisa los cortes, quesos madurados, salsas de autor y pan artesanal de cada candidata.</p>
+          </article>
+          <article>
+            <b>02</b>
+            <h3>Emite tu voto único</h3>
+            <p>Inicia sesión con tu cuenta del club y respalda a tu favorita antes del cierre del cronómetro.</p>
+          </article>
+          <article>
+            <b>03</b>
+            <h3>Pruébala en el menú</h3>
+            <p>Al cerrar la campaña, la receta ganadora encabeza los pedidos del mes en Medellín.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  );
 }
 
 export default function App() {
-  const [user, setUser] = useState(null); const [view, setView] = useState('home'); const [loading, setLoading] = useState(true);
-  useEffect(() => { if (!localStorage.getItem('secret-bite-token')) return setLoading(false); api('/auth/me').then(data => setUser(data.user)).catch(() => localStorage.removeItem('secret-bite-token')).finally(() => setLoading(false)); }, []);
-  function onAuth(data) { localStorage.setItem('secret-bite-token', data.token); setUser(data.user); setView(data.user.role === 'ADMIN' ? 'admin' : data.user.role === 'CHEF' ? 'kitchen' : 'home'); }
-  function logout() { localStorage.removeItem('secret-bite-token'); setUser(null); setView('home'); }
-  if (loading) return <div className="splash">SB</div>;
-  return <><Header user={user} view={view} setView={setView} logout={logout} />{view === 'auth' ? <Auth onAuth={onAuth} goHome={() => setView('home')} /> : view === 'admin' && user?.role === 'ADMIN' ? <Admin /> : view === 'orders' && user?.role === 'CLIENT' ? <Orders /> : view === 'kitchen' && ['CHEF', 'ADMIN'].includes(user?.role) ? <Kitchen /> : <Home user={user} onNeedAuth={() => setView('auth')} />}<footer><span className="brand-mark">SB</span><p><b>Secret Bite Medellín</b><br />La próxima burger la elige la comunidad.</p><small>© {new Date().getFullYear()} · Plataforma de votación y pedidos</small></footer></>;
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const onExpired = () => {
+      setUser(null);
+      navigate('/auth', { replace: true });
+    };
+    window.addEventListener('secret-bite:session-expired', onExpired);
+    return () => window.removeEventListener('secret-bite:session-expired', onExpired);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!hasSessionTokens()) return setLoading(false);
+    api('/auth/me')
+      .then(data => setUser(data.user))
+      .catch(() => clearSessionTokens())
+      .finally(() => setLoading(false));
+  }, []);
+
+  function onAuth(data) {
+    saveSessionTokens(data);
+    setUser(data.user);
+    if (data.user.role === 'ADMIN') {
+      navigate('/admin/dashboard');
+    } else if (data.user.role === 'CHEF') {
+      navigate('/cocina');
+    } else {
+      navigate('/');
+    }
+  }
+
+  function logout() {
+    logoutSession();
+    setUser(null);
+    navigate('/');
+  }
+
+  if (loading) {
+    return (
+      <div className="splash">
+        <div className="splash-inner">
+          <span className="brand-mark splash-mark">SB</span>
+          <Spinner size="lg" label="Iniciando Secret Bite Medellín…" />
+          <small>Preparando parrilla y urna digital…</small>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ToastProvider>
+      <Header user={user} logout={logout} />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Home
+              user={user}
+              onNeedAuth={() => navigate('/auth')}
+              onOrderClick={() => navigate('/pedidos')}
+            />
+          }
+        />
+        <Route
+          path="/auth"
+          element={<Auth onAuth={onAuth} goHome={() => navigate('/')} />}
+        />
+        <Route
+          path="/pedidos"
+          element={user?.role === 'CLIENT' ? <Orders /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/cocina"
+          element={
+            ['CHEF', 'ADMIN'].includes(user?.role) ? <Kitchen /> : <Navigate to="/" replace />
+          }
+        />
+        <Route
+          path="/admin/*"
+          element={user?.role === 'ADMIN' ? <AdminLayout /> : <Navigate to="/" replace />}
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <footer>
+        <span className="brand-mark">SB</span>
+        <p>
+          <b>Secret Bite Medellín</b>
+          <br />
+          La próxima burger la elige la comunidad.
+        </p>
+        <small>© {new Date().getFullYear()} · Plataforma de votación y pedidos</small>
+      </footer>
+    </ToastProvider>
+  );
 }

@@ -4,8 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { createDatabase, campaignStatus, getCampaign, listCampaigns } from '../../src/db.js';
 import { seedDatabase } from '../../src/seed-data.js';
-import { publicUser, userWithRole } from '../../src/modules/users.js';
-import { writeAudit, listAudit } from '../../src/modules/audit.js';
+import { publicUser, userWithRole, listUsersPaginated } from '../../src/modules/users.js';
+import { writeAudit, listAudit, listAuditPaginated } from '../../src/modules/audit.js';
 import { loadEnv } from '../../src/config.js';
 import { COLLECTIONS, SUBCOLLECTIONS, ROLES, ORDER_STATUSES, CAMPAIGN_STATUSES, documentIds } from '../../src/firestore/collections.js';
 import { auditDocument, normalizeTimestamp } from '../../src/firestore/audit.js';
@@ -97,16 +97,19 @@ describe('Unit Tests - Base de datos SQLite, Semilla y Consultas (db.js & seed-d
       .prepare('SELECT burger_id FROM campaign_burgers WHERE campaign_id=? LIMIT 1')
       .get(campaignRow.id);
 
-    db.prepare('INSERT INTO votes(user_id,campaign_id,burger_id) VALUES(?,?,?)').run(
+    db.prepare('INSERT INTO votes(user_id,campaign_id,burger_id,quantity) VALUES(?,?,?,?)').run(
       client.id,
       campaignRow.id,
-      candidate.burger_id
+      candidate.burger_id,
+      3
     );
 
     const campaign = getCampaign(db, campaignRow.id, client.id);
     expect(campaign.userVoteBurgerId).toBe(candidate.burger_id);
+    expect(campaign.userVoteQuantity).toBe(3);
     const votedCandidate = campaign.candidates.find(c => c.id === candidate.burger_id);
     expect(votedCandidate.voteCount).toBe(1);
+    expect(votedCandidate.desiredQuantity).toBe(3);
   });
 
   it('listCampaigns cierra automáticamente campañas expiradas y asigna ganadora', () => {
@@ -169,6 +172,33 @@ describe('Unit Tests - Módulos de Usuarios y Auditoría (users.js & audit.js)',
     expect(chef.app_role).toBe('CHEF');
   });
 
+  it('listUsersPaginated separa STAFF (ADMIN y CHEF) de CLIENTS (CLIENT) y pagina resultados', () => {
+    for (let i = 1; i <= 8; i += 1) {
+      db.prepare("INSERT INTO users(name,email,password_hash,role) VALUES(?,?,'hash','CLIENT')").run(
+        `Cliente Extra ${i}`,
+        `cliente${i}@test.co`
+      );
+    }
+
+    const staff = listUsersPaginated(db, { scope: 'STAFF', page: 1, pageSize: 10 });
+    expect(staff.users).toHaveLength(2);
+    expect(staff.users.every(u => u.role === 'ADMIN' || u.role === 'CHEF')).toBe(true);
+    expect(staff.counts.STAFF).toBe(2);
+    expect(staff.counts.CLIENT).toBe(9);
+
+    const clientsPage1 = listUsersPaginated(db, { scope: 'CLIENTS', page: 1, pageSize: 4 });
+    expect(clientsPage1.users).toHaveLength(4);
+    expect(clientsPage1.users.every(u => u.role === 'CLIENT')).toBe(true);
+    expect(clientsPage1.pagination).toEqual({
+      page: 1,
+      pageSize: 4,
+      total: 9,
+      totalPages: 3,
+      hasPrev: false,
+      hasNext: true
+    });
+  });
+
   it('writeAudit y listAudit registran y parsean metadatos JSON correctamente', () => {
     const admin = userWithRole(db, 'u.email=?', 'admin@secretbite.co');
     writeAudit(db, {
@@ -188,6 +218,43 @@ describe('Unit Tests - Módulos de Usuarios y Auditoría (users.js & audit.js)',
       actorEmail: 'admin@secretbite.co',
       metadata: { reason: 'unit-test' }
     });
+  });
+
+  it('listAuditPaginated pagina, filtra por entidad y busca por texto correctamente', () => {
+    const admin = userWithRole(db, 'u.email=?', 'admin@secretbite.co');
+    for (let i = 1; i <= 15; i += 1) {
+      writeAudit(db, {
+        actorUserId: admin.id,
+        action: i % 2 === 0 ? 'BURGER_UPDATED' : 'CAMPAIGN_CREATED',
+        entityType: i % 2 === 0 ? 'BURGER' : 'CAMPAIGN',
+        entityId: i,
+        metadata: { batch: `lote-${i}` }
+      });
+    }
+
+    const page1 = listAuditPaginated(db, { page: 1, pageSize: 5 });
+    expect(page1.entries).toHaveLength(5);
+    expect(page1.pagination).toEqual({
+      page: 1,
+      pageSize: 5,
+      total: 15,
+      totalPages: 3,
+      hasPrev: false,
+      hasNext: true
+    });
+
+    const page2 = listAuditPaginated(db, { page: 2, pageSize: 5 });
+    expect(page2.entries).toHaveLength(5);
+    expect(page2.pagination.hasPrev).toBe(true);
+    expect(page2.pagination.hasNext).toBe(true);
+
+    const onlyBurgers = listAuditPaginated(db, { page: 1, pageSize: 10, entityType: 'BURGER' });
+    expect(onlyBurgers.pagination.total).toBe(7);
+    expect(onlyBurgers.entries.every(e => e.entityType === 'BURGER')).toBe(true);
+
+    const searched = listAuditPaginated(db, { page: 1, pageSize: 10, q: 'lote-14' });
+    expect(searched.pagination.total).toBe(1);
+    expect(searched.entries[0].entityId).toBe('14');
   });
 });
 
@@ -284,7 +351,70 @@ describe('Unit Tests - Cliente HTTP (client/src/api.js)', () => {
       })
     );
 
-    await expect(api('/campaigns/1/votes', { method: 'POST' })).rejects.toThrow('Ya votaste en esta campaña.');
+    await expect(
+      api('/campaigns/1/votes', { method: 'POST' })
+    ).rejects.toThrow('Ya votaste en esta campaña.');
+  });
+
+  it('renueva automáticamente el accessToken usando el refreshToken cuando recibe 401 y reintenta la petición', async () => {
+    const store = new Map([
+      ['secret-bite-token', 'expired-access-token'],
+      ['secret-bite-refresh-token', 'valid-refresh-token']
+    ]);
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn(key => store.get(key) ?? null),
+      setItem: vi.fn((key, val) => store.set(key, val)),
+      removeItem: vi.fn(key => store.delete(key))
+    });
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: 'La sesión no es válida o expiró.' })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          accessToken: 'fresh-access-token-15m',
+          refreshToken: 'fresh-refresh-token-1d'
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ user: { id: 3, email: 'cliente@secretbite.co' } })
+      });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const data = await api('/auth/me');
+    expect(data).toEqual({ user: { id: 3, email: 'cliente@secretbite.co' } });
+    expect(store.get('secret-bite-token')).toBe('fresh-access-token-15m');
+    expect(store.get('secret-bite-refresh-token')).toBe('fresh-refresh-token-1d');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('deduplica peticiones GET concurrentes hacia la misma ruta para evitar llamadas duplicadas', async () => {
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Promise(resolve => {
+          setTimeout(() => {
+            resolve({
+              ok: true,
+              status: 200,
+              json: async () => ({ burgers: [{ id: 1, name: 'La Antioqueña' }] })
+            });
+          }, 15);
+        })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const [first, second] = await Promise.all([api('/burgers'), api('/burgers')]);
+    expect(first).toEqual(second);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
 
