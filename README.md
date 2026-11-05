@@ -38,7 +38,8 @@ Express sirve `dist/` cuando existe. Las variables disponibles están documentad
 
 - `pnpm dev`: API y Vite en paralelo.
 - `pnpm seed`: recrea/actualiza los datos demo de forma idempotente.
-- `pnpm test`: pruebas de voto único, cierre temporal y autorización.
+- `pnpm test` / `pnpm test:unit`: pruebas unitarias con Vitest.
+- `pnpm test:e2e`: pruebas end-to-end (E2E) de la API y concurrencia con Vitest y Supertest.
 - `pnpm build`: compilación del cliente.
 - `pnpm start`: API y SPA compilada.
 
