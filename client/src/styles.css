@@ -1249,6 +1249,122 @@
     gap: 0.35rem;
   }
 
+  /* Barra de acciones organizada para filas de tablas */
+  .admin-table-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.35rem;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    block-size: 1.95rem;
+    padding: 0 0.65rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    line-height: 1;
+    border-radius: calc(var(--radius-sm) - 2px);
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    box-sizing: border-box;
+  }
+
+  .action-btn svg {
+    flex-shrink: 0;
+    transition: transform 0.16s ease;
+  }
+
+  /* 1. Botón Editar */
+  .action-btn-edit {
+    color: #e4e4e7;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .action-btn-edit:hover:not(:disabled) {
+    color: var(--orange-light);
+    background: rgba(255, 94, 31, 0.16);
+    border-color: rgba(255, 94, 31, 0.45);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -2px rgba(255, 94, 31, 0.35);
+  }
+
+  .action-btn-edit:hover:not(:disabled) svg {
+    transform: rotate(-10deg) scale(1.1);
+  }
+
+  /* 2. Botón Visibilidad (Mostrar / Ocultar) */
+  .action-btn-visibility {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.035);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .action-btn-visibility.active-state {
+    color: #cbd5e1;
+  }
+
+  .action-btn-visibility.active-state:hover:not(:disabled) {
+    color: #fde047;
+    background: rgba(234, 179, 8, 0.14);
+    border-color: rgba(234, 179, 8, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -2px rgba(234, 179, 8, 0.3);
+  }
+
+  .action-btn-visibility.inactive-state {
+    color: #86efac;
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.28);
+  }
+
+  .action-btn-visibility.inactive-state:hover:not(:disabled) {
+    color: #bbf7d0;
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -2px rgba(34, 197, 94, 0.35);
+  }
+
+  /* 3. Botón Eliminar */
+  .action-btn-delete {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.24);
+  }
+
+  .action-btn-delete:hover:not(:disabled) {
+    color: #fff;
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.55);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -2px rgba(239, 68, 68, 0.45);
+  }
+
+  .action-btn-delete:hover:not(:disabled) svg {
+    transform: scale(1.1);
+  }
+
+  .action-btn:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
   .danger-text-btn {
     color: #fca5a5;
   }
@@ -1833,6 +1949,194 @@
     padding: 0.95rem 1.45rem;
     border-block-start: 1px solid var(--line);
     background: rgba(18, 18, 26, 0.85);
+  }
+
+  /* Modal amplio para detalles de campaña y escrutinio */
+  dialog.admin-modal.admin-modal-wide {
+    inline-size: min(58rem, calc(100vw - 2rem));
+  }
+
+  .modal-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0 1.45rem;
+    border-block-end: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  .modal-tab-btn {
+    background: none;
+    border: none;
+    border-block-end: 2px solid transparent;
+    padding: 0.8rem 1rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.18s ease;
+  }
+
+  .modal-tab-btn:hover {
+    color: #fff;
+  }
+
+  .modal-tab-btn.active {
+    color: var(--orange-light);
+    border-block-end-color: var(--orange);
+  }
+
+  .modal-tab-btn .badge-pill {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+  }
+
+  .winner-showcase-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem 1.45rem;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(255, 181, 71, 0.12) 0%, rgba(255, 94, 31, 0.08) 100%);
+    border: 1px solid rgba(255, 181, 71, 0.35);
+    box-shadow: 0 8px 24px -6px rgba(255, 181, 71, 0.15);
+  }
+
+  .winner-showcase-img {
+    inline-size: 5.5rem;
+    block-size: 4.8rem;
+    border-radius: 0.75rem;
+    object-fit: cover;
+    border: 2px solid rgba(255, 181, 71, 0.6);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+  }
+
+  .winner-showcase-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-inline-size: 0;
+    flex: 1;
+  }
+
+  .winner-showcase-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .winner-showcase-copy h4 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #fff;
+    font-family: var(--font-display);
+  }
+
+  .winner-showcase-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.85rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-block-start: 0.25rem;
+  }
+
+  .winner-showcase-meta strong {
+    color: var(--amber);
+    font-family: var(--font-mono);
+  }
+
+  /* Stack de avatares de candidatas para tablas */
+  .candidates-avatar-stack {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-end: 0.5rem;
+  }
+
+  .candidates-avatar-stack img {
+    inline-size: 1.85rem;
+    block-size: 1.85rem;
+    border-radius: 50%;
+    border: 2px solid #14141d;
+    object-fit: cover;
+    margin-inline-start: -0.55rem;
+    background: #1c1c24;
+  }
+
+  .candidates-avatar-stack img:first-child {
+    margin-inline-start: 0;
+  }
+
+  .winner-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(255, 181, 71, 0.14);
+    border: 1px solid rgba(255, 181, 71, 0.4);
+    color: var(--amber);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+
+  .leader-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #7dd3fc;
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+
+  .voter-client-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .voter-avatar {
+    inline-size: 1.85rem;
+    block-size: 1.85rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--line);
+    color: var(--orange-light);
+    font-weight: 800;
+    font-size: 0.76rem;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  .voter-burger-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .voter-burger-cell img {
+    inline-size: 2.1rem;
+    block-size: 1.85rem;
+    border-radius: 0.4rem;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    flex-shrink: 0;
   }
 
   .role-select-wrap {

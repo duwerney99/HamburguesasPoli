@@ -615,7 +615,7 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
           tabIndex={0}
           role="region"
           aria-labelledby="admin-burgers-caption"
-          className="table-wrap responsive-table-region datatable-wrap"
+          className="table-wrap responsive-table-region datatable-wrap rounded-b-none"
         >
           <table className="admin-table burgers-table datatable">
             <thead>
@@ -624,7 +624,7 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
                 <th scope="col">Ingredientes</th>
                 <th scope="col">Precio</th>
                 <th scope="col">Estado</th>
-                <th scope="col" className='text-center' style={{ minWidth: '250px', width: '250px', maxWidth: '250px' }}>Acción</th>
+                <th scope="col" className="text-center" style={{ minWidth: '270px', width: '270px', maxWidth: '270px' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -663,43 +663,73 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
                         {b.active ? 'Visible' : 'Oculta'}
                       </span>
                     </td>
-                    <td>
-                      <div className="row-actions-group">
+                    <td className="text-center">
+                      <div className="admin-table-actions" role="group" aria-label={`Acciones para ${b.name}`}>
                         <button
                           type="button"
-                          className="text-button"
+                          className="action-btn action-btn-edit"
                           disabled={rowBusy || deleteBusy}
                           onClick={() => handleEditBurger(b)}
-                          title={`Editar datos de ${b.name}`}
+                          title={`Editar receta y precio de ${b.name}`}
+                          aria-label={`Editar ${b.name}`}
                         >
-                          Editar
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                            <path d="m15 5 4 4"/>
+                          </svg>
+                          <span>Editar</span>
                         </button>
 
                         <button
                           type="button"
-                          className="text-button inline-busy-btn"
+                          className={`action-btn action-btn-visibility ${b.active ? 'active-state' : 'inactive-state'}`}
                           disabled={rowBusy || deleteBusy}
                           onClick={() => toggleBurgerVisibility(b)}
+                          title={b.active ? `Ocultar ${b.name} de los clientes` : `Mostrar ${b.name} a los clientes`}
+                          aria-label={b.active ? `Ocultar ${b.name}` : `Mostrar ${b.name}`}
                         >
                           {rowBusy ? (
                             <>
-                              <Spinner size="sm" label="Actualizando visibilidad…" />
+                              <Spinner size="xs" label="Actualizando…" />
                               <span>Actualizando…</span>
                             </>
                           ) : b.active ? (
-                            'Ocultar'
+                            <>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                                <line x1="2" y1="2" x2="22" y2="22"/>
+                              </svg>
+                              <span>Ocultar</span>
+                            </>
                           ) : (
-                            'Mostrar'
+                            <>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                              </svg>
+                              <span>Mostrar</span>
+                            </>
                           )}
                         </button>
 
                         <button
                           type="button"
-                          className="text-button danger-text-btn"
+                          className="action-btn action-btn-delete"
                           disabled={rowBusy || deleteBusy}
                           onClick={() => setBurgerToDelete(b)}
+                          title={`Eliminar ${b.name} del catálogo`}
+                          aria-label={`Eliminar ${b.name}`}
                         >
-                          Eliminar
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M3 6h18"/>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                            <line x1="10" x2="10" y1="11" y2="17"/>
+                            <line x1="14" x2="14" y1="11" y2="17"/>
+                          </svg>
+                          <span>Eliminar</span>
                         </button>
                       </div>
                     </td>

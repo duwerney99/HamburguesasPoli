@@ -324,6 +324,30 @@ export function createApp({ db, jwtSecret = 'dev-only-change-me', refreshSecret 
     }
   });
 
+  app.get('/api/campaigns/:id/votes', requireAuth, requireRole('ADMIN'), (req, res) => {
+    const campaignId = Number(req.params.id);
+    const campaign = db.prepare('SELECT id, name FROM campaigns WHERE id=?').get(campaignId);
+    if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
+    const votes = db.prepare(`
+      SELECT v.id,
+             v.quantity,
+             v.created_at createdAt,
+             u.id userId,
+             u.name userName,
+             u.email userEmail,
+             b.id burgerId,
+             b.name burgerName,
+             b.image_url burgerImageUrl,
+             b.price_cop burgerPriceCop
+      FROM votes v
+      JOIN users u ON u.id = v.user_id
+      JOIN burgers b ON b.id = v.burger_id
+      WHERE v.campaign_id = ?
+      ORDER BY v.created_at DESC
+    `).all(campaignId);
+    res.json({ campaignId, votes });
+  });
+
   app.get('/api/admin/stats', requireAuth, requireRole('ADMIN'), (_req, res) => {
     const totals = {
       users: db.prepare("SELECT COUNT(*) total FROM users WHERE role='CLIENT'").get().total,
