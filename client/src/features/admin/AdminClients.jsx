@@ -91,26 +91,12 @@ export default function AdminClients() {
       <section className="admin-list datatable-section">
         <div className="section-heading admin-section-head">
           <div>
-            <span className="eyebrow">COMUNIDAD · MIEMBROS DEL CLUB</span>
             <div className="datatable-title-row">
               <h2 id={clientsCaptionId}>Directorio de clientes</h2>
-              <span className="datatable-total-pill">
-                {clientsPagination.total}{' '}
-                {clientsPagination.total === 1 ? 'cliente registrado' : 'clientes registrados'}
-              </span>
-              {clientsLoading && <Spinner size="sm" label="Cargando directorio de clientes…" />}
             </div>
-            <p className="admin-section-sub">
-              Listado paginado de miembros con cuenta de cliente (`CLIENT`). El rol de cliente es fijo y de solo lectura.
-            </p>
           </div>
 
           <div className="admin-toolbar datatable-toolbar">
-            <div className="client-readonly-note">
-              <span className="status role-client">ROL FIJO · CLIENT</span>
-              <small>Los clientes participan en votaciones y pedidos; no tienen permisos de administración.</small>
-            </div>
-
             <div className="datatable-controls-right">
               <div className="admin-search-field">
                 <label htmlFor={clientsSearchId} className="visually-hidden">
@@ -230,11 +216,11 @@ export default function AdminClients() {
                     {clientsSorting.indicator('ordersCount')}
                   </button>
                 </th>
-                <th scope="col">Tipo de cuenta</th>
+                <th scope="col" style={{ minWidth: '180px', width: '180px', maxWidth: '180px' }}>Tipo de cuenta</th>
                 <th
                   scope="col"
                   aria-sort={clientsSorting.ariaSort('id')}
-                  style={{ minWidth: '160px', width: '160px', maxWidth: '160px' }}
+                  style={{ minWidth: '220px', width: '220px', maxWidth: '220px' }}
                 >
                   <button
                     type="button"
@@ -278,7 +264,7 @@ export default function AdminClients() {
                     </div>
                   </td>
                   <td>
-                    <span className="status role-badge role-client">Cliente del club</span>
+                    <span className="status role-badge role-client text-xs">Cliente del club</span>
                   </td>
                   <td>
                     {client.createdAt ? (

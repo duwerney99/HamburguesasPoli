@@ -125,17 +125,10 @@ export default function AdminAudit() {
       <section className="admin-list datatable-section">
         <div className="section-heading admin-section-head">
           <div>
-            <span className="eyebrow">TRAZABILIDAD · DATATABLE PAGINADO</span>
             <div className="datatable-title-row">
               <h2 id={auditCaptionId}>Registro de auditoría</h2>
-              <span className="datatable-total-pill">
-                {auditPagination.total} {auditPagination.total === 1 ? 'evento' : 'eventos'}
-              </span>
               {auditLoading && <Spinner size="sm" label="Cargando página de trazabilidad…" />}
             </div>
-            <p className="admin-section-sub">
-              Consulta paginada en servidor para mantener un cargue ligero sin importar el volumen histórico.
-            </p>
           </div>
 
           <div className="admin-toolbar datatable-toolbar">
@@ -164,7 +157,7 @@ export default function AdminAudit() {
                   id={auditSearchId}
                   name="auditSearch"
                   type="search"
-                  placeholder="Buscar acción, actor, ID o detalle…"
+                  placeholder="Buscar acción, actor o detalle…"
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck="false"
@@ -281,7 +274,7 @@ export default function AdminAudit() {
                 <th
                   scope="col"
                   aria-sort={auditSorting.ariaSort('id')}
-                  style={{ minWidth: '150px', width: '150px' }}
+                 style={{ minWidth: '220px', width: '220px', maxWidth: '220px' }}
                 >
                   <button
                     type="button"

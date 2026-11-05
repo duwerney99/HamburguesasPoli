@@ -61,26 +61,38 @@ function Header({ user, logout }) {
           <small>Medellín · Burger club</small>
         </span>
       </Link>
-      <nav aria-label="Navegación principal">
-        <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
-          Votación
+      <nav className="site-nav" aria-label="Navegación principal">
+        <NavLink to="/" end className={({ isActive }) => `site-nav-item ${isActive ? 'active' : ''}`}>
+          <svg className="site-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 2c.5 2.5 2 4.5 4 6 2.5 2 4 4.5 4 8a8 8 0 1 1-16 0c0-3.5 1.5-6 4-8 2-1.5 3.5-3.5 4-6Z" />
+          </svg>
+          <span>Votación</span>
         </NavLink>
         {user?.role === 'CLIENT' && (
-          <NavLink to="/pedidos" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Pedidos
+          <NavLink to="/pedidos" className={({ isActive }) => `site-nav-item ${isActive ? 'active' : ''}`}>
+            <svg className="site-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            <span>Pedidos</span>
           </NavLink>
         )}
         {['CHEF', 'ADMIN'].includes(user?.role) && (
-          <NavLink to="/cocina" className={({ isActive }) => (isActive ? 'active' : '')}>
-            Cocina
+          <NavLink to="/cocina" className={({ isActive }) => `site-nav-item ${isActive ? 'active' : ''}`}>
+            <svg className="site-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" x2="18" y1="17" y2="17"/>
+            </svg>
+            <span>Cocina</span>
           </NavLink>
         )}
         {user?.role === 'ADMIN' && (
           <NavLink
             to={isAdmin ? location.pathname : '/admin/dashboard'}
-            className={() => (isAdmin ? 'active' : '')}
+            className={() => `site-nav-item ${isAdmin ? 'active' : ''}`}
           >
-            Panel admin
+            <svg className="site-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+            </svg>
+            <span>Panel admin</span>
           </NavLink>
         )}
       </nav>
@@ -590,6 +602,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     const onExpired = () => {
@@ -640,7 +654,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <Header user={user} logout={logout} />
+      {!isAdmin && <Header user={user} logout={logout} />}
       <Routes>
         <Route
           path="/"
@@ -668,19 +682,27 @@ export default function App() {
         />
         <Route
           path="/admin/*"
-          element={user?.role === 'ADMIN' ? <AdminLayout /> : <Navigate to="/" replace />}
+          element={
+            user?.role === 'ADMIN' ? (
+              <AdminLayout user={user} logout={logout} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <footer>
-        <span className="brand-mark">SB</span>
-        <p>
-          <b>Secret Bite Medellín</b>
-          <br />
-          La próxima burger la elige la comunidad.
-        </p>
-        <small>© {new Date().getFullYear()} · Plataforma de votación y pedidos</small>
-      </footer>
+      {!isAdmin && (
+        <footer>
+          <span className="brand-mark">SB</span>
+          <p>
+            <b>Secret Bite Medellín</b>
+            <br />
+            La próxima burger la elige la comunidad.
+          </p>
+          <small>© {new Date().getFullYear()} · Plataforma de votación y pedidos</small>
+        </footer>
+      )}
     </ToastProvider>
   );
 }

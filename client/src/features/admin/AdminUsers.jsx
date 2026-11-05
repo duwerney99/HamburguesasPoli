@@ -144,17 +144,10 @@ export default function AdminUsers() {
       <section className="admin-list datatable-section">
         <div className="section-heading admin-section-head">
           <div>
-            <span className="eyebrow">EQUIPO OPERATIVO · ADMIN Y CHEF</span>
             <div className="datatable-title-row">
               <h2 id={staffCaptionId}>Usuarios internos</h2>
-              <span className="datatable-total-pill">
-                {staffPagination.total} {staffPagination.total === 1 ? 'integrante' : 'integrantes'}
-              </span>
               {staffLoading && <Spinner size="sm" label="Cargando usuarios internos…" />}
             </div>
-            <p className="admin-section-sub">
-              Personal administrativo y de cocina con acceso al backoffice y tablero de comandas.
-            </p>
           </div>
 
           <div className="admin-toolbar datatable-toolbar">

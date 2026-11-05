@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { api } from '../../api.js';
 import { AlertBanner, ConfirmDialog, LoaderCard, Spinner, useToast } from '../../ui/Feedback.jsx';
 import {
@@ -8,15 +8,20 @@ import {
   readAndOptimizeImage
 } from './adminShared.jsx';
 
-export function BurgerForm({ onSaved }) {
-  const initial = {
-    name: '',
-    description: '',
-    ingredients: '',
-    imageUrl: '/assets/hero-burger.jpeg',
-    priceCop: 28000,
-    active: true
-  };
+export function BurgerModal({ open, burger, onClose, onSaved }) {
+  const isEdit = Boolean(burger && burger.id);
+  const initial = useMemo(
+    () => ({
+      name: burger?.name || '',
+      description: burger?.description || '',
+      ingredients: burger?.ingredients || '',
+      imageUrl: burger?.imageUrl || '/assets/hero-burger.jpeg',
+      priceCop: burger?.priceCop != null ? burger.priceCop : 28000,
+      active: burger?.active !== undefined ? Boolean(burger.active) : true
+    }),
+    [burger]
+  );
+
   const [form, setForm] = useState(initial);
   const [fileMeta, setFileMeta] = useState(null);
   const [dragActive, setDragActive] = useState(false);
@@ -24,6 +29,56 @@ export function BurgerForm({ onSaved }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const { notify } = useToast();
+  const dialogRef = useRef(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    if (open) {
+      setForm(initial);
+      setFileMeta(null);
+      setError('');
+    }
+  }, [open, initial]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (open) {
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || !open) return undefined;
+
+    const onPointerDown = event => {
+      const rect = dialog.getBoundingClientRect();
+      const clickedOutside =
+        event.clientX < rect.left ||
+        event.clientX > rect.right ||
+        event.clientY < rect.top ||
+        event.clientY > rect.bottom;
+      if (clickedOutside && !submitting && !optimizing) {
+        onClose();
+      }
+    };
+
+    dialog.addEventListener('pointerdown', onPointerDown);
+    return () => dialog.removeEventListener('pointerdown', onPointerDown);
+  }, [open, submitting, optimizing, onClose]);
+
+  const handleNativeCancel = e => {
+    e.preventDefault();
+    if (!submitting && !optimizing) {
+      onClose();
+    }
+  };
 
   async function handleFileSelect(file) {
     if (!file) return;
@@ -52,7 +107,7 @@ export function BurgerForm({ onSaved }) {
   }
 
   function clearImage() {
-    setForm(prev => ({ ...prev, imageUrl: initial.imageUrl }));
+    setForm(prev => ({ ...prev, imageUrl: '/assets/hero-burger.jpeg' }));
     setFileMeta(null);
   }
 
@@ -61,10 +116,24 @@ export function BurgerForm({ onSaved }) {
     setSubmitting(true);
     setError('');
     try {
-      await api('/burgers', { method: 'POST', body: JSON.stringify(form) });
-      setForm(initial);
-      setFileMeta(null);
-      onSaved('Hamburguesa creada e incorporada al catálogo.');
+      if (isEdit) {
+        await api(`/burgers/${burger.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(form)
+        });
+        const msg = `Hamburguesa "${form.name}" actualizada con éxito.`;
+        notify({ type: 'success', title: 'Receta actualizada', message: msg });
+        onSaved?.(msg);
+      } else {
+        await api('/burgers', {
+          method: 'POST',
+          body: JSON.stringify(form)
+        });
+        const msg = `Hamburguesa "${form.name}" creada e incorporada al catálogo.`;
+        notify({ type: 'success', title: 'Hamburguesa creada', message: msg });
+        onSaved?.(msg);
+      }
+      onClose();
     } catch (err) {
       setError(err.message);
       notify({ type: 'error', title: 'Error al guardar hamburguesa', message: err.message });
@@ -74,124 +143,254 @@ export function BurgerForm({ onSaved }) {
   }
 
   return (
-    <form className="admin-form" method="post" onSubmit={submit}>
-      <div className="admin-form-header">
-        <div>
-          <span className="eyebrow">RECETA DE AUTOR</span>
-          <h3>Nueva hamburguesa</h3>
-        </div>
-        <span className="price-preview-badge">{formatCop(form.priceCop)}</span>
-      </div>
-      <label>
-        Nombre de la burger
-        <input
-          name="burgerName"
-          required
-          minLength="2"
-          placeholder="Ej. Smoky Bourbon Melt"
-          value={form.name}
-          onChange={e => setForm({ ...form, name: e.target.value })}
-        />
-      </label>
-      <label>
-        Descripción gastronómica
-        <textarea
-          name="burgerDescription"
-          required
-          minLength="10"
-          placeholder="Describe el perfil de sabor, punto de cocción y textura..."
-          value={form.description}
-          onChange={e => setForm({ ...form, description: e.target.value })}
-        />
-      </label>
-      <label>
-        Ingredientes separados por coma
-        <textarea
-          name="burgerIngredients"
-          required
-          placeholder="Carne Angus, cheddar madurado, tocineta ahumada..."
-          value={form.ingredients}
-          onChange={e => setForm({ ...form, ingredients: e.target.value })}
-        />
-      </label>
-      <label>
-        Precio COP
-        <input
-          name="priceCop"
-          type="number"
-          min="1000"
-          required
-          value={form.priceCop}
-          onChange={e => setForm({ ...form, priceCop: Number(e.target.value) })}
-        />
-      </label>
-
-      <div
-        className={`image-upload-zone ${dragActive ? 'drag-over' : ''}`}
-        onDragOver={e => {
-          e.preventDefault();
-          setDragActive(true);
-        }}
-        onDragLeave={() => setDragActive(false)}
-        onDrop={handleDrop}
-      >
-        <div className="image-upload-preview">
-          <img src={form.imageUrl} alt="Vista previa de la hamburguesa" />
-          <div className="image-upload-meta">
-            <strong>
-              {optimizing
-                ? 'Optimizando fotografía…'
-                : fileMeta
-                  ? fileMeta.name
-                  : 'Imagen predeterminada del club'}
-            </strong>
-            <small>
-              {optimizing
-                ? 'Ajustando dimensiones y compresión WebP'
-                : fileMeta
-                  ? `${fileMeta.sizeKb} KB · Optimizada automáticamente`
-                  : 'Sube una foto en JPG, PNG o WEBP (máx. 5 MB)'}
-            </small>
+    <dialog
+      ref={dialogRef}
+      className="admin-modal"
+      closedby="any"
+      aria-labelledby={titleId}
+      onCancel={handleNativeCancel}
+    >
+      <div className="admin-modal-surface">
+        <header className="admin-modal-head">
+          <div className="admin-modal-head-main">
+            <div className="admin-modal-badge" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 11h16a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-1a1 1 0 0 1 1-1Z" />
+                <path d="M4 8a8 8 0 0 1 16 0" />
+                <path d="M5 19h14" />
+              </svg>
+            </div>
+            <div className="admin-modal-title-box">
+              <h3 id={titleId}>
+                {isEdit ? `Editar Producto` : 'Nuevo Producto'}
+              </h3>
+            </div>
           </div>
-          {optimizing ? (
-            <Spinner size="sm" label="Optimizando fotografía…" />
-          ) : (
-            fileMeta && (
-              <button type="button" className="text-button" onClick={clearImage}>
-                Quitar
-              </button>
-            )
-          )}
-        </div>
-        <label className="file-input-label">
-          <span>Fotografía del producto</span>
-          <input
-            name="burgerImage"
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            disabled={optimizing || submitting}
-            onChange={e => handleFileSelect(e.target.files?.[0])}
-          />
-        </label>
-      </div>
 
-      <AlertBanner
-        type="error"
-        title="Revisa los datos de la hamburguesa"
-        message={error}
-        onClose={() => setError('')}
-      />
-      <button type="submit" className="button full" disabled={submitting || optimizing}>
-        {submitting ? (
-          <>
-            <Spinner size="sm" label="Guardando hamburguesa en catálogo…" />
-            <span>Guardando hamburguesa…</span>
-          </>
-        ) : (
-          'Guardar hamburguesa en catálogo'
-        )}
+          <div className="admin-modal-head-right">
+            <span className="price-preview-badge">{formatCop(form.priceCop || 0)}</span>
+            <button
+              type="button"
+              className="alert-close modal-close-btn"
+              onClick={onClose}
+              disabled={submitting || optimizing}
+              aria-label="Cerrar modal"
+            >
+              ✕
+            </button>
+          </div>
+        </header>
+
+        <form className="admin-form admin-modal-form" method="post" onSubmit={submit}>
+          <div className="admin-modal-body">
+            {/* Fila 1: Nombre de la burger y Precio */}
+            <div className="modal-form-grid">
+              <div className="modal-field">
+                <label htmlFor="modal-burger-name" className="modal-field-label">
+                  Nombre de la burger <span className="required-mark">*</span>
+                </label>
+                <input
+                  id="modal-burger-name"
+                  name="burgerName"
+                  type="text"
+                  required
+                  minLength="2"
+                  placeholder="Ej. Smoky Bourbon Melt"
+                  value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                  className="modal-field-input"
+                />
+              </div>
+
+              <div className="modal-field">
+                <label htmlFor="modal-burger-price" className="modal-field-label">
+                  Precio COP <span className="required-mark">*</span>
+                </label>
+                <div className="price-input-wrap">
+                  <span className="price-input-currency" aria-hidden="true">$</span>
+                  <input
+                    id="modal-burger-price"
+                    name="priceCop"
+                    type="number"
+                    min="1000"
+                    step="500"
+                    required
+                    placeholder="28000"
+                    value={form.priceCop}
+                    onChange={e => setForm({ ...form, priceCop: Number(e.target.value) })}
+                    className="modal-field-input modal-field-price"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Fila 2: Switch moderno de visibilidad en tienda y catálogo */}
+            <div className="active-toggle-card">
+              <div className="active-toggle-copy">
+                <div className="active-toggle-title-row">
+                  <span className="active-toggle-dot" aria-hidden="true" />
+                  <strong id="active-toggle-heading">Visibilidad en tienda y catálogo activo</strong>
+                </div>
+                <p id="active-toggle-sub">
+                  Al estar activa, estará disponible para pedidos en línea y participará en campañas de votación.
+                </p>
+              </div>
+              <label className="switch-toggle" aria-labelledby="active-toggle-heading">
+                <input
+                  type="checkbox"
+                  name="burgerActive"
+                  checked={form.active}
+                  onChange={e => setForm({ ...form, active: e.target.checked })}
+                />
+                <span className="switch-slider" aria-hidden="true" />
+              </label>
+            </div>
+
+            {/* Fila 3: Descripción gastronómica */}
+            <div className="modal-field">
+              <div className="modal-field-head">
+                <label htmlFor="modal-burger-desc" className="modal-field-label">
+                  Descripción gastronómica <span className="required-mark">*</span>
+                </label>
+                <small className="field-hint">Mínimo 10 caracteres</small>
+              </div>
+              <textarea
+                id="modal-burger-desc"
+                name="burgerDescription"
+                rows="3"
+                required
+                minLength="10"
+                placeholder="Describe el perfil de sabor, punto de cocción, jugosidad y texturas..."
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                className="modal-field-textarea"
+              />
+            </div>
+
+            {/* Fila 4: Ingredientes separados por coma */}
+            <div className="modal-field">
+              <div className="modal-field-head">
+                <label htmlFor="modal-burger-ingredients" className="modal-field-label">
+                  Ingredientes principales <span className="required-mark">*</span>
+                </label>
+                <small className="field-hint">Separados por coma</small>
+              </div>
+              <textarea
+                id="modal-burger-ingredients"
+                name="burgerIngredients"
+                rows="2"
+                required
+                placeholder="Carne Angus 200g, cheddar madurado 12 meses, tocineta glaseada en maple, cebolla crispy..."
+                value={form.ingredients}
+                onChange={e => setForm({ ...form, ingredients: e.target.value })}
+                className="modal-field-textarea"
+              />
+            </div>
+
+            {/* Fila 5: Zona de Fotografía del producto */}
+            <div
+              className={`image-upload-zone modal-upload-zone ${dragActive ? 'drag-over' : ''}`}
+              onDragOver={e => {
+                e.preventDefault();
+                setDragActive(true);
+              }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={handleDrop}
+            >
+              <div className="image-upload-preview">
+                <div className="image-preview-frame">
+                  <img src={form.imageUrl} alt="Vista previa de la hamburguesa" />
+                </div>
+                <div className="image-upload-meta">
+                  <strong>
+                    {optimizing
+                      ? 'Optimizando fotografía…'
+                      : fileMeta
+                        ? fileMeta.name
+                        : isEdit
+                          ? 'Fotografía actual de la receta'
+                          : 'Imagen predeterminada del club'}
+                  </strong>
+                  <small>
+                    {optimizing
+                      ? 'Ajustando dimensiones y compresión WebP'
+                      : fileMeta
+                        ? `${fileMeta.sizeKb} KB · Optimizada automáticamente`
+                        : 'Sube una foto en JPG, PNG o WEBP (máx. 5 MB) · Optimización WebP'}
+                  </small>
+                </div>
+                {optimizing ? (
+                  <Spinner size="sm" label="Optimizando fotografía…" />
+                ) : (
+                  (fileMeta || (isEdit && form.imageUrl !== '/assets/hero-burger.jpeg')) && (
+                    <button type="button" className="text-button" onClick={clearImage}>
+                      Restablecer predeterminada
+                    </button>
+                  )
+                )}
+              </div>
+              <label className="file-input-label">
+                <span>Fotografía del producto</span>
+                <input
+                  name="burgerImage"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  disabled={optimizing || submitting}
+                  onChange={e => handleFileSelect(e.target.files?.[0])}
+                />
+              </label>
+            </div>
+
+            <AlertBanner
+              type="error"
+              title="Revisa los datos de la hamburguesa"
+              message={error}
+              onClose={() => setError('')}
+            />
+          </div>
+
+          <footer className="admin-modal-footer">
+            <button
+              type="button"
+              className="button ghost"
+              onClick={onClose}
+              disabled={submitting || optimizing}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="button"
+              disabled={submitting || optimizing}
+            >
+              {submitting ? (
+                <>
+                  <Spinner size="sm" label="Guardando receta…" />
+                  <span>Guardando…</span>
+                </>
+              ) : isEdit ? (
+                'Guardar cambios'
+              ) : (
+                'Crear hamburguesa'
+              )}
+            </button>
+          </footer>
+        </form>
+      </div>
+    </dialog>
+  );
+}
+
+// Wrapper retrocompatible si se importa BurgerForm
+export function BurgerForm({ onSaved }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className="button" onClick={() => setOpen(true)}>
+        + Nueva hamburguesa
       </button>
-    </form>
+      <BurgerModal open={open} burger={null} onClose={() => setOpen(false)} onSaved={onSaved} />
+    </>
   );
 }
 
@@ -204,6 +403,11 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
   const [burgerPageSize, setBurgerPageSize] = useState(10);
   const [busyKey, setBusyKey] = useState('');
   const [burgerToDelete, setBurgerToDelete] = useState(null);
+
+  // Estado del modal para Crear / Editar
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingBurger, setEditingBurger] = useState(null);
+
   const { notify } = useToast();
 
   const loadBurgers = useCallback(
@@ -236,6 +440,16 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
       loadBurgers(false);
     }
   }, [initialBurgers, loadBurgers]);
+
+  function handleCreateBurger() {
+    setEditingBurger(null);
+    setModalOpen(true);
+  }
+
+  function handleEditBurger(burger) {
+    setEditingBurger(burger);
+    setModalOpen(true);
+  }
 
   async function toggleBurgerVisibility(burger) {
     const key = `burger-${burger.id}`;
@@ -313,26 +527,38 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
 
   return (
     <div className="admin-module-stack">
-      <section className="admin-single-form-wrap">
-        <BurgerForm onSaved={() => loadBurgers(false)} />
-      </section>
-
       <section className="admin-list datatable-section">
         <div className="section-heading admin-section-head">
           <div>
-            <span className="eyebrow">CATÁLOGO MAESTRO · DATATABLE</span>
             <div className="datatable-title-row">
-              <h2 id="admin-burgers-caption">Hamburguesas</h2>
-              <span className="datatable-total-pill">
-                {filteredBurgers.length} {filteredBurgers.length === 1 ? 'receta' : 'recetas'}
-              </span>
+              <h2 id="admin-burgers-caption">Productos</h2>
               {refreshing && <Spinner size="sm" label="Actualizando catálogo…" />}
             </div>
-            <p className="admin-section-sub">
-              Activa, desactiva o elimina productos para el menú de pedidos y próximas convocatorias de votación.
-            </p>
           </div>
           <div className="admin-toolbar">
+            <button
+              type="button"
+              className="button small"
+              onClick={handleCreateBurger}
+              title="Crear nueva hamburguesa para el catálogo"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Nueva hamburguesa</span>
+            </button>
+
             <div className="datatable-controls-right">
               <div className="admin-search-field">
                 <label htmlFor="admin-burger-search" className="visually-hidden">
@@ -394,11 +620,11 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
           <table className="admin-table burgers-table datatable">
             <thead>
               <tr>
-                <th scope="col">Hamburguesa</th>
+                <th scope="col">Producto</th>
                 <th scope="col">Ingredientes</th>
                 <th scope="col">Precio</th>
                 <th scope="col">Estado</th>
-                <th scope="col">Acción</th>
+                <th scope="col" className='text-center' style={{ minWidth: '250px', width: '250px', maxWidth: '250px' }}>Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -439,6 +665,16 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
                     </td>
                     <td>
                       <div className="row-actions-group">
+                        <button
+                          type="button"
+                          className="text-button"
+                          disabled={rowBusy || deleteBusy}
+                          onClick={() => handleEditBurger(b)}
+                          title={`Editar datos de ${b.name}`}
+                        >
+                          Editar
+                        </button>
+
                         <button
                           type="button"
                           className="text-button inline-busy-btn"
@@ -491,6 +727,15 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
         />
       </section>
 
+      {/* Modal para Crear y Editar Hamburguesas */}
+      <BurgerModal
+        open={modalOpen}
+        burger={editingBurger}
+        onClose={() => setModalOpen(false)}
+        onSaved={() => loadBurgers(false)}
+      />
+
+      {/* Diálogo de Confirmación para Eliminación */}
       <ConfirmDialog
         open={Boolean(burgerToDelete)}
         title="¿Eliminar esta hamburguesa del catálogo?"
@@ -512,4 +757,3 @@ export default function AdminProducts({ burgers: initialBurgers = null }) {
     </div>
   );
 }
-
