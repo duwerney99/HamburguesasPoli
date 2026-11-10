@@ -44,6 +44,7 @@ export function createDatabase(filename = ':memory:') {
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
       burger_id INTEGER NOT NULL REFERENCES burgers(id) ON DELETE RESTRICT,
+      quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity >= 1),
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(user_id, campaign_id)
     );
@@ -83,11 +84,29 @@ export function createDatabase(filename = ':memory:') {
       metadata TEXT NOT NULL DEFAULT '{}',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      jti TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      revoked INTEGER NOT NULL DEFAULT 0 CHECK(revoked IN (0,1)),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at);
     CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id, revoked);
   `);
   const burgerColumns = new Set(db.prepare('PRAGMA table_info(burgers)').all().map(column => column.name));
   if (!burgerColumns.has('price_cop')) db.exec('ALTER TABLE burgers ADD COLUMN price_cop INTEGER NOT NULL DEFAULT 28000;');
+  if (!burgerColumns.has('deleted')) db.exec('ALTER TABLE burgers ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;');
+  const voteColumns = new Set(db.prepare('PRAGMA table_info(votes)').all().map(column => column.name));
+  if (!voteColumns.has('quantity')) db.exec('ALTER TABLE votes ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1;');
+  if (!voteColumns.has('payment_status')) db.exec("ALTER TABLE votes ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'UNPAID';");
+  if (!voteColumns.has('order_id')) db.exec('ALTER TABLE votes ADD COLUMN order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL;');
+  const orderColumns = new Set(db.prepare('PRAGMA table_info(orders)').all().map(column => column.name));
+  if (!orderColumns.has('payment_status')) db.exec("ALTER TABLE orders ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'UNPAID';");
+  if (!orderColumns.has('campaign_id')) db.exec('ALTER TABLE orders ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id) ON DELETE SET NULL;');
+  if (!orderColumns.has('vote_id')) db.exec('ALTER TABLE orders ADD COLUMN vote_id INTEGER REFERENCES votes(id) ON DELETE SET NULL;');
   const campaignColumns = new Set(db.prepare('PRAGMA table_info(campaigns)').all().map(column => column.name));
   if (!campaignColumns.has('status')) db.exec("ALTER TABLE campaigns ADD COLUMN status TEXT NOT NULL DEFAULT 'PUBLISHED';");
   if (!campaignColumns.has('winner_burger_id')) db.exec('ALTER TABLE campaigns ADD COLUMN winner_burger_id INTEGER REFERENCES burgers(id);');
@@ -126,15 +145,34 @@ export function campaignStatus(campaign, now = new Date()) {
 export function getCampaign(db, id, userId) {
   const row = db.prepare(`SELECT id,name,starts_at startsAt,ends_at endsAt,published,status,winner_burger_id winnerBurgerId,closed_at closedAt FROM campaigns WHERE id=?`).get(id);
   if (!row) return null;
+  const computedStatus = campaignStatus(row);
   const candidates = db.prepare(`
-    SELECT b.id, b.name, b.description, b.ingredients, b.image_url imageUrl, b.active,
-           COUNT(v.id) voteCount
+    SELECT b.id, b.name, b.description, b.ingredients, b.image_url imageUrl, b.price_cop priceCop, b.active, b.deleted,
+           COUNT(v.id) voteCount,
+           COALESCE(SUM(v.quantity), 0) desiredQuantity
     FROM campaign_burgers cb JOIN burgers b ON b.id = cb.burger_id
     LEFT JOIN votes v ON v.campaign_id = cb.campaign_id AND v.burger_id = b.id
-    WHERE cb.campaign_id = ? GROUP BY b.id ORDER BY voteCount DESC, b.id
-  `).all(id).map(candidate => ({ ...candidate, active: Boolean(candidate.active) }));
-  const ownVote = userId ? db.prepare('SELECT burger_id burgerId FROM votes WHERE campaign_id = ? AND user_id = ?').get(id, userId) : null;
-  return { ...row, published: Boolean(row.published), lifecycleStatus: row.status, status: campaignStatus(row), candidates, userVoteBurgerId: ownVote?.burgerId ?? null };
+    WHERE cb.campaign_id = ? AND b.deleted = 0 AND (b.active = 1 OR ? = 'CLOSED')
+    GROUP BY b.id ORDER BY voteCount DESC, desiredQuantity DESC, b.id
+  `).all(id, computedStatus).map(candidate => ({
+    ...candidate,
+    active: Boolean(candidate.active),
+    deleted: Boolean(candidate.deleted),
+    voteCount: Number(candidate.voteCount || 0),
+    desiredQuantity: Number(candidate.desiredQuantity || 0)
+  }));
+  const ownVote = userId
+    ? db.prepare('SELECT burger_id burgerId, quantity FROM votes WHERE campaign_id = ? AND user_id = ?').get(id, userId)
+    : null;
+  return {
+    ...row,
+    published: Boolean(row.published),
+    lifecycleStatus: row.status,
+    status: computedStatus,
+    candidates,
+    userVoteBurgerId: ownVote?.burgerId ?? null,
+    userVoteQuantity: ownVote?.quantity != null ? Number(ownVote.quantity) : null
+  };
 }
 
 export function listCampaigns(db, userId) {

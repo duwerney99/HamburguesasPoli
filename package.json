@@ -10,7 +10,10 @@
     "dev:client": "vite --config client/vite.config.js",
     "start": "node server/src/index.js",
     "build": "vite build --config client/vite.config.js",
-    "test": "node --test server/test/*.test.js",
+    "test": "vitest run --config vitest.config.js",
+    "test:unit": "vitest run --config vitest.config.js",
+    "test:e2e": "vitest run --config vitest.e2e.config.js",
+    "test:watch": "vitest --config vitest.config.js",
     "seed": "node server/src/seed.js",
     "firestore:check": "node server/src/firestore/check-connection.js",
     "firestore:migrate": "node server/src/firestore/migrate-from-sqlite.js"
@@ -25,14 +28,20 @@
     "jsonwebtoken": "^9.0.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-router-dom": "^7.18.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.4",
     "@vitejs/plugin-react": "^5.0.4",
     "concurrently": "^9.2.1",
     "supertest": "^7.1.4",
-    "vite": "^7.1.7"
+    "tailwindcss": "^4.3.4",
+    "vite": "^7.1.7",
+    "vitest": "^5.1.0"
   },
-  "engines": { "node": ">=22.5" },
+  "engines": {
+    "node": ">=22.5"
+  },
   "packageManager": "pnpm@11.19.0"
 }

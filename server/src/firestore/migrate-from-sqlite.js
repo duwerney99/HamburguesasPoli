@@ -70,17 +70,33 @@ try {
     }
   }
 
-  for (const vote of sqlite.prepare('SELECT id,user_id userId,campaign_id campaignId,burger_id burgerId,created_at createdAt FROM votes').all()) {
+  for (const vote of sqlite.prepare('SELECT id,user_id userId,campaign_id campaignId,burger_id burgerId,quantity,payment_status paymentStatus,order_id orderId,created_at createdAt FROM votes').all()) {
     await put(firestore.collection(COLLECTIONS.votes).doc(documentIds.vote(vote.campaignId, vote.userId)), {
-      legacyId: vote.id, userId: String(vote.userId), campaignId: String(vote.campaignId), burgerId: String(vote.burgerId), createdAt: timestamp(vote.createdAt)
+      legacyId: vote.id,
+      userId: String(vote.userId),
+      campaignId: String(vote.campaignId),
+      burgerId: String(vote.burgerId),
+      quantity: Number(vote.quantity || 1),
+      paymentStatus: vote.paymentStatus || 'UNPAID',
+      orderId: vote.orderId == null ? null : String(vote.orderId),
+      createdAt: timestamp(vote.createdAt)
     });
     stats.votes += 1;
   }
 
-  const orders = sqlite.prepare(`SELECT id,user_id userId,status,phone,delivery_address deliveryAddress,notes,total_cop totalCop,created_at createdAt,updated_at updatedAt FROM orders`).all();
+  const orders = sqlite.prepare(`SELECT id,user_id userId,status,payment_status paymentStatus,campaign_id campaignId,vote_id voteId,phone,delivery_address deliveryAddress,notes,total_cop totalCop,created_at createdAt,updated_at updatedAt FROM orders`).all();
   for (const order of orders) {
     const orderRef = firestore.collection(COLLECTIONS.orders).doc(documentIds.order(order.id));
-    await put(orderRef, { ...order, userId: String(order.userId), legacyId: order.id, createdAt: timestamp(order.createdAt), updatedAt: timestamp(order.updatedAt) });
+    await put(orderRef, {
+      ...order,
+      userId: String(order.userId),
+      paymentStatus: order.paymentStatus || 'UNPAID',
+      campaignId: order.campaignId == null ? null : String(order.campaignId),
+      voteId: order.voteId == null ? null : String(order.voteId),
+      legacyId: order.id,
+      createdAt: timestamp(order.createdAt),
+      updatedAt: timestamp(order.updatedAt)
+    });
     stats.orders += 1;
     for (const item of sqlite.prepare(`SELECT id,burger_id burgerId,burger_name burgerName,ingredients_snapshot ingredients,
       removed_ingredients removedIngredients,notes,quantity,unit_price_cop unitPriceCop FROM order_items WHERE order_id=?`).all(order.id)) {
