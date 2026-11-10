@@ -9,6 +9,14 @@ import { writeAudit, listAudit, listAuditPaginated } from '../../src/modules/aud
 import { loadEnv } from '../../src/config.js';
 import { COLLECTIONS, SUBCOLLECTIONS, ROLES, ORDER_STATUSES, CAMPAIGN_STATUSES, documentIds } from '../../src/firestore/collections.js';
 import { auditDocument, normalizeTimestamp } from '../../src/firestore/audit.js';
+import {
+  assertRepositoryPortContract,
+  computeKitchenProduction,
+  createApplicationUseCases,
+  createFirestoreRepositoryAdapter,
+  createRepositoryAdapter,
+  createSqliteRepositoryAdapter
+} from '../../src/hexagonal/index.js';
 import { api } from '../../../client/src/api.js';
 
 describe('Unit Tests - Dominio de Campañas (campaignStatus)', () => {
@@ -417,4 +425,92 @@ describe('Unit Tests - Cliente HTTP (client/src/api.js)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Unit Tests - Arquitectura Hexagonal (Dominio, Puertos, Casos de Uso y Adaptadores Firestore/SQLite)', () => {
+  it('valida que los adaptadores de Firestore y SQLite cumplan el contrato de puertos (assertRepositoryPortContract)', () => {
+    const db = createDatabase(':memory:');
+    try {
+      seedDatabase(db);
+      const sqliteAdapter = createSqliteRepositoryAdapter(db);
+      expect(assertRepositoryPortContract(sqliteAdapter)).toBe(sqliteAdapter);
+      expect(sqliteAdapter.provider).toBe('sqlite');
+
+      const fakeFirestore = {
+        collection: () => ({
+          doc: () => ({
+            get: async () => ({ exists: false }),
+            collection: () => ({ doc: () => ({}), get: async () => ({ docs: [] }) })
+          }),
+          where: () => ({ limit: () => ({ get: async () => ({ empty: true, docs: [] }) }), get: async () => ({ docs: [] }) }),
+          orderBy: () => ({ get: async () => ({ docs: [] }), limit: () => ({ get: async () => ({ docs: [] }) }) }),
+          get: async () => ({ docs: [], size: 0 })
+        }),
+        batch: () => ({ create: () => {}, set: () => {}, update: () => {}, delete: () => {}, commit: async () => {} }),
+        runTransaction: async fn => fn({ get: async () => ({ exists: false }), create: () => {}, update: () => {} })
+      };
+
+      const firestoreAdapter = createFirestoreRepositoryAdapter(fakeFirestore);
+      expect(assertRepositoryPortContract(firestoreAdapter)).toBe(firestoreAdapter);
+      expect(firestoreAdapter.provider).toBe('firestore');
+    } finally {
+      db.close();
+    }
+  });
+
+  it('ejecuta casos de uso de aplicación y calcula producción del Chef mediante la arquitectura hexagonal', async () => {
+    const db = createDatabase(':memory:');
+    try {
+      seedDatabase(db);
+      const adapter = createRepositoryAdapter({ provider: 'sqlite', sqliteDb: db });
+      const useCases = createApplicationUseCases(adapter);
+
+      const burgers = await useCases.burgers.list({ isAdmin: false });
+      expect(burgers.length).toBeGreaterThanOrEqual(4);
+
+      const activeCampaign = await useCases.campaigns.getActive();
+      expect(activeCampaign.status).toBe('ACTIVE');
+
+      const production = computeKitchenProduction([
+        {
+          id: 101,
+          userId: 3,
+          customerName: 'Cliente Demo',
+          customerEmail: 'cliente@secretbite.co',
+          phone: '3001234567',
+          deliveryAddress: 'El Poblado',
+          status: 'CONFIRMED',
+          paymentStatus: 'PAID',
+          totalCop: 56000,
+          createdAt: '2026-11-09T20:00:00Z',
+          items: [
+            {
+              burgerId: burgers[0].id,
+              burgerName: burgers[0].name,
+              ingredients: burgers[0].ingredients,
+              quantity: 2,
+              unitPriceCop: 28000
+            }
+          ]
+        },
+        {
+          id: 102,
+          userId: 4,
+          customerName: 'Sin Pagar',
+          status: 'PENDING',
+          paymentStatus: 'UNPAID',
+          totalCop: 28000,
+          items: [{ burgerId: burgers[0].id, burgerName: burgers[0].name, quantity: 1 }]
+        }
+      ]);
+
+      expect(production.paidOrders).toHaveLength(1);
+      expect(production.productionSummary.totalBurgersToMake).toBe(2);
+      expect(production.clientBreakdown).toHaveLength(1);
+      expect(production.clientBreakdown[0].totalBurgers).toBe(2);
+    } finally {
+      db.close();
+    }
+  });
+});
+
 

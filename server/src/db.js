@@ -101,6 +101,12 @@ export function createDatabase(filename = ':memory:') {
   if (!burgerColumns.has('deleted')) db.exec('ALTER TABLE burgers ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;');
   const voteColumns = new Set(db.prepare('PRAGMA table_info(votes)').all().map(column => column.name));
   if (!voteColumns.has('quantity')) db.exec('ALTER TABLE votes ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1;');
+  if (!voteColumns.has('payment_status')) db.exec("ALTER TABLE votes ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'UNPAID';");
+  if (!voteColumns.has('order_id')) db.exec('ALTER TABLE votes ADD COLUMN order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL;');
+  const orderColumns = new Set(db.prepare('PRAGMA table_info(orders)').all().map(column => column.name));
+  if (!orderColumns.has('payment_status')) db.exec("ALTER TABLE orders ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'UNPAID';");
+  if (!orderColumns.has('campaign_id')) db.exec('ALTER TABLE orders ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id) ON DELETE SET NULL;');
+  if (!orderColumns.has('vote_id')) db.exec('ALTER TABLE orders ADD COLUMN vote_id INTEGER REFERENCES votes(id) ON DELETE SET NULL;');
   const campaignColumns = new Set(db.prepare('PRAGMA table_info(campaigns)').all().map(column => column.name));
   if (!campaignColumns.has('status')) db.exec("ALTER TABLE campaigns ADD COLUMN status TEXT NOT NULL DEFAULT 'PUBLISHED';");
   if (!campaignColumns.has('winner_burger_id')) db.exec('ALTER TABLE campaigns ADD COLUMN winner_burger_id INTEGER REFERENCES burgers(id);');

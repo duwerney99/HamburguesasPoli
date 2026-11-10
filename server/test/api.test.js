@@ -139,10 +139,106 @@ test('el dashboard administrativo entrega KPIs y series para gráficas y el rout
       '/admin/dashboard',
       '/admin/productos',
       '/admin/votaciones',
+      '/admin/ventas',
+      '/admin/cocina',
       '/admin/usuarios',
       '/admin/clientes',
       '/admin/trazabilidad'
     ]);
+  } finally {
+    db.close();
+  }
+});
+
+test('módulo de ventas y cocina: gestiona pedidos por campaña actual, pagos y producción del chef por cliente', async () => {
+  const { app, db } = fixture();
+  try {
+    const adminToken = await login(app, 'admin@secretbite.co', 'Admin123!');
+    const chefToken = await login(app, 'chef@secretbite.co', 'Chef123!');
+    const clientToken = await login(app, 'cliente@secretbite.co', 'Cliente123!');
+
+    const activeRes = await request(app).get('/api/campaigns/active');
+    expect(activeRes.status).toBe(200);
+    const campaignId = activeRes.body.campaign.id;
+    const candidateBurgerId = activeRes.body.campaign.candidates[0].id;
+
+    // Cliente vota y solicita 3 hamburguesas en la campaña actual
+    const voteRes = await request(app)
+      .post(`/api/campaigns/${campaignId}/votes`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ burgerId: candidateBurgerId, quantity: 3 });
+    expect(voteRes.status).toBe(201);
+
+    // En ventas aparece el pedido de la campaña como UNPAID y aún no entra a cocina
+    const salesInitial = await request(app)
+      .get('/api/admin/sales')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(salesInitial.status).toBe(200);
+    expect(salesInitial.body.campaignOrders).toHaveLength(1);
+    expect(salesInitial.body.campaignOrders[0].paymentStatus).toBe('UNPAID');
+    expect(salesInitial.body.campaignOrders[0].quantity).toBe(3);
+
+    const kitchenBeforePay = await request(app)
+      .get('/api/kitchen/orders')
+      .set('Authorization', `Bearer ${chefToken}`);
+    expect(kitchenBeforePay.status).toBe(200);
+    expect(kitchenBeforePay.body.paidOrders).toHaveLength(0);
+    expect(kitchenBeforePay.body.productionSummary.totalBurgersToMake).toBe(0);
+
+    // Admin marca el pedido de la campaña actual como PAGADO
+    const voteId = salesInitial.body.campaignOrders[0].voteId;
+    const markPaidRes = await request(app)
+      .put(`/api/admin/sales/campaign-votes/${voteId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ paymentStatus: 'PAID', status: 'CONFIRMED' });
+    expect(markPaidRes.status).toBe(200);
+    expect(markPaidRes.body.voteOrder.paymentStatus).toBe('PAID');
+    expect(markPaidRes.body.order.paymentStatus).toBe('PAID');
+    expect(markPaidRes.body.order.status).toBe('CONFIRMED');
+
+    // Ahora Cocina ve exactamente 3 hamburguesas por hacer para el Chef y el desglose por cliente pagado
+    const kitchenAfterPay = await request(app)
+      .get('/api/kitchen/orders')
+      .set('Authorization', `Bearer ${chefToken}`);
+    expect(kitchenAfterPay.status).toBe(200);
+    expect(kitchenAfterPay.body.paidOrders).toHaveLength(1);
+    expect(kitchenAfterPay.body.productionSummary.totalBurgersToMake).toBe(3);
+    expect(kitchenAfterPay.body.productionSummary.byBurger[0].toMakeQuantity).toBe(3);
+    expect(kitchenAfterPay.body.clientBreakdown).toHaveLength(1);
+    expect(kitchenAfterPay.body.clientBreakdown[0].totalBurgers).toBe(3);
+  } finally {
+    db.close();
+  }
+});
+
+test('arquitectura hexagonal modular: expone metadatos de puertos, adaptadores y módulos desacoplados', async () => {
+  const { app, db } = fixture();
+  try {
+    const archRes = await request(app).get('/api/architecture');
+    expect(archRes.status).toBe(200);
+    expect(archRes.body.architecture).toBe('hexagonal-modular');
+    expect(archRes.body.provider).toBe('sqlite');
+    expect(archRes.body.ports).toEqual(
+      expect.arrayContaining(['authTokens', 'users', 'burgers', 'campaigns', 'votes', 'orders', 'audit', 'stats'])
+    );
+    expect(archRes.body.modules).toEqual(
+      expect.arrayContaining(['auth', 'burgers', 'campaigns', 'orders', 'sales', 'users', 'audit', 'stats'])
+    );
+    expect(archRes.body.moduleStructure.burgers).toMatchObject({
+      application: 'server/src/modules/burgers/application/burgers.use-cases.js',
+      domain: expect.objectContaining({
+        entity: 'server/src/modules/burgers/domain/',
+        exceptions: 'server/src/modules/burgers/domain/',
+        repository: 'server/src/modules/burgers/domain/',
+        projections: 'server/src/modules/burgers/domain/',
+        interfaces: 'server/src/modules/burgers/domain/',
+        valueObjects: 'server/src/modules/burgers/domain/'
+      }),
+      infrastructure: expect.objectContaining({
+        controllers: 'server/src/modules/burgers/infrastructure/controllers/burgers.controller.js',
+        dtos: 'server/src/modules/burgers/infrastructure/dtos/burgers.dto.js'
+      })
+    });
   } finally {
     db.close();
   }

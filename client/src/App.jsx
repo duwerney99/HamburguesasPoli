@@ -16,7 +16,6 @@ import {
   saveSessionTokens
 } from './api.js';
 import Orders from './features/Orders.jsx';
-import Kitchen from './features/Kitchen.jsx';
 import AdminLayout from './features/admin/AdminLayout.jsx';
 import { formatCop } from './features/admin/adminShared.jsx';
 import { AlertBanner, LoaderCard, Spinner, ToastProvider, useToast } from './ui/Feedback.jsx';
@@ -76,12 +75,15 @@ function Header({ user, logout }) {
             <span>Pedidos</span>
           </NavLink>
         )}
-        {['CHEF', 'ADMIN'].includes(user?.role) && (
-          <NavLink to="/cocina" className={({ isActive }) => `site-nav-item ${isActive ? 'active' : ''}`}>
+        {user?.role === 'CHEF' && (
+          <NavLink
+            to="/admin/cocina"
+            className={() => `site-nav-item ${isAdmin ? 'active' : ''}`}
+          >
             <svg className="site-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" x2="18" y1="17" y2="17"/>
             </svg>
-            <span>Cocina</span>
+            <span>Panel Cocina</span>
           </NavLink>
         )}
         {user?.role === 'ADMIN' && (
@@ -628,7 +630,7 @@ export default function App() {
     if (data.user.role === 'ADMIN') {
       navigate('/admin/dashboard');
     } else if (data.user.role === 'CHEF') {
-      navigate('/cocina');
+      navigate('/admin/cocina');
     } else {
       navigate('/');
     }
@@ -677,13 +679,17 @@ export default function App() {
         <Route
           path="/cocina"
           element={
-            ['CHEF', 'ADMIN'].includes(user?.role) ? <Kitchen /> : <Navigate to="/" replace />
+            ['CHEF', 'ADMIN'].includes(user?.role) ? (
+              <Navigate to="/admin/cocina" replace />
+            ) : (
+              <Navigate to="/" replace />
+            )
           }
         />
         <Route
           path="/admin/*"
           element={
-            user?.role === 'ADMIN' ? (
+            ['ADMIN', 'CHEF'].includes(user?.role) ? (
               <AdminLayout user={user} logout={logout} />
             ) : (
               <Navigate to="/" replace />

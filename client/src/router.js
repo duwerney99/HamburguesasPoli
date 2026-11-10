@@ -21,6 +21,20 @@ export const ADMIN_ROUTES = [
     description: 'Programación de campañas mensuales y urna digital.'
   },
   {
+    path: '/admin/ventas',
+    segment: 'ventas',
+    id: 'ventas',
+    label: 'Ventas y Pedidos',
+    description: 'Gestión de todas las ventas realizadas, pagos y pedidos por campaña actual.'
+  },
+  {
+    path: '/admin/cocina',
+    segment: 'cocina',
+    id: 'cocina',
+    label: 'Cocina del Chef',
+    description: 'Tablero de producción de hamburguesas pagadas y pedidos por cliente.'
+  },
+  {
     path: '/admin/usuarios',
     segment: 'usuarios',
     id: 'usuarios',

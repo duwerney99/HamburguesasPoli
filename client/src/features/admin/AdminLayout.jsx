@@ -4,6 +4,8 @@ import { ADMIN_ROUTES, normalizePath } from '../../router.js';
 import AdminDashboard from './AdminDashboard.jsx';
 import AdminProducts from './AdminProducts.jsx';
 import AdminCampaigns from './AdminCampaigns.jsx';
+import AdminSales from './AdminSales.jsx';
+import Kitchen from '../Kitchen.jsx';
 import AdminUsers from './AdminUsers.jsx';
 import AdminClients from './AdminClients.jsx';
 import AdminAudit from './AdminAudit.jsx';
@@ -36,6 +38,21 @@ function AdminRouteIcon({ id }) {
           <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
           <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
           <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+        </svg>
+      );
+    case 'ventas':
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect width="20" height="14" x="2" y="5" rx="2" />
+          <line x1="2" x2="22" y1="10" y2="10" />
+          <line x1="6" x2="10" y1="15" y2="15" />
+        </svg>
+      );
+    case 'cocina':
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" />
+          <line x1="6" x2="18" y1="17" y2="17" />
         </svg>
       );
     case 'usuarios':
@@ -71,9 +88,15 @@ export default function AdminLayout({ user, logout }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const isChef = user?.role === 'CHEF';
+  const defaultRoutePath = isChef ? '/admin/cocina' : '/admin/dashboard';
+  const visibleRoutes = isChef
+    ? ADMIN_ROUTES.filter(route => route.id === 'cocina')
+    : ADMIN_ROUTES;
+
   const normalizedPath = normalizePath(location.pathname);
   const activeRoute =
-    ADMIN_ROUTES.find(route => route.path === normalizedPath) || ADMIN_ROUTES[0];
+    visibleRoutes.find(route => route.path === normalizedPath) || visibleRoutes[0];
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -106,7 +129,7 @@ export default function AdminLayout({ user, logout }) {
         {/* Cabecera del Sidebar con Marca de Backoffice */}
         <div className="admin-sidebar-brand-box">
           <Link
-            to="/admin/dashboard"
+            to={defaultRoutePath}
             className="admin-brand-link"
             title="Secret Bite Backoffice"
             onClick={() => setSidebarOpen(false)}
@@ -114,7 +137,7 @@ export default function AdminLayout({ user, logout }) {
             <span className="brand-mark">SB</span>
             <div className="admin-brand-copy">
               <span className="admin-brand-name">Secret Bite</span>
-              <span className="admin-brand-tag">BACKOFFICE</span>
+              <span className="admin-brand-tag">{isChef ? 'PANEL CHEF' : 'BACKOFFICE'}</span>
             </div>
           </Link>
           <button
@@ -132,8 +155,10 @@ export default function AdminLayout({ user, logout }) {
 
         {/* Navegación por módulos */}
         <nav className="admin-sidebar-nav" aria-label="Módulos de administración">
-          <span className="admin-nav-group-label">Módulos de control</span>
-          {ADMIN_ROUTES.map(route => (
+          <span className="admin-nav-group-label">
+            {isChef ? 'Estación de cocina' : 'Módulos de control'}
+          </span>
+          {visibleRoutes.map(route => (
             <NavLink
               key={route.path}
               to={route.path}
@@ -145,23 +170,9 @@ export default function AdminLayout({ user, logout }) {
               </span>
               <span className="admin-nav-label">{route.label}</span>
               {route.id === 'votaciones' && <span className="admin-live-tag">VIVO</span>}
+              {route.id === 'cocina' && <span className="admin-live-tag">CHEF</span>}
             </NavLink>
           ))}
-
-          <span className="admin-nav-group-label" style={{ marginTop: '1.25rem' }}>Operaciones</span>
-          <NavLink
-            to="/cocina"
-            className="admin-nav-item"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <span className="admin-nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
-                <line x1="6" x2="18" y1="17" y2="17"/>
-              </svg>
-            </span>
-            <span className="admin-nav-label">Pantalla de Cocina</span>
-          </NavLink>
         </nav>
 
         {/* Pie del Sidebar: Retorno a la tienda */}
@@ -200,23 +211,27 @@ export default function AdminLayout({ user, logout }) {
             </button>
 
             <div className="admin-header-crumb">
-              <span className="admin-header-crumb-root">Backoffice</span>
+              <span className="admin-header-crumb-root">
+                {isChef ? 'Panel Cocina' : 'Backoffice'}
+              </span>
               <span className="admin-header-crumb-sep">/</span>
-              <span className="admin-header-crumb-leaf">{activeRoute.label}</span>
+              <span className="admin-header-crumb-leaf">{activeRoute?.label || 'Cocina del Chef'}</span>
             </div>
           </div>
 
           <div className="admin-header-right">
             <div
               className="admin-user-pill"
-              title={`${user?.name || 'Administrador'} (Admin)`}
+              title={`${user?.name || (isChef ? 'Chef' : 'Administrador')} (${user?.role || 'ADMIN'})`}
             >
               <span className="admin-user-avatar" aria-hidden="true">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                {user?.name ? user.name.charAt(0).toUpperCase() : isChef ? 'C' : 'A'}
               </span>
               <div className="admin-user-text">
-                <span className="admin-user-name">{user?.name || 'Administrador'}</span>
-                <span className="admin-user-badge">ADMIN</span>
+                <span className="admin-user-name">
+                  {user?.name || (isChef ? 'Chef Principal' : 'Administrador')}
+                </span>
+                <span className="admin-user-badge">{isChef ? 'CHEF' : 'ADMIN'}</span>
               </div>
             </div>
 
@@ -225,7 +240,7 @@ export default function AdminLayout({ user, logout }) {
                 type="button"
                 className="admin-header-logout-btn"
                 onClick={logout}
-                title="Cerrar sesión de administración"
+                title="Cerrar sesión"
                 aria-label="Cerrar sesión"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -241,16 +256,26 @@ export default function AdminLayout({ user, logout }) {
 
         {/* Contenido del Módulo */}
         <main className="admin-main-content max-w-7xl w-full mx-auto">
-          <Routes>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="productos" element={<AdminProducts />} />
-            <Route path="votaciones" element={<AdminCampaigns />} />
-            <Route path="usuarios" element={<AdminUsers />} />
-            <Route path="clientes" element={<AdminClients />} />
-            <Route path="trazabilidad" element={<AdminAudit />} />
-            <Route path="*" element={<Navigate to="dashboard" replace />} />
-          </Routes>
+          {isChef ? (
+            <Routes>
+              <Route index element={<Navigate to="cocina" replace />} />
+              <Route path="cocina" element={<Kitchen />} />
+              <Route path="*" element={<Navigate to="cocina" replace />} />
+            </Routes>
+          ) : (
+            <Routes>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="productos" element={<AdminProducts />} />
+              <Route path="votaciones" element={<AdminCampaigns />} />
+              <Route path="ventas" element={<AdminSales />} />
+              <Route path="cocina" element={<Kitchen />} />
+              <Route path="usuarios" element={<AdminUsers />} />
+              <Route path="clientes" element={<AdminClients />} />
+              <Route path="trazabilidad" element={<AdminAudit />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
+            </Routes>
+          )}
         </main>
       </div>
     </div>
