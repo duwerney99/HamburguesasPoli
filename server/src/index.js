@@ -8,12 +8,19 @@ loadEnv();
 const port = Number(process.env.PORT || 3001);
 const provider = (process.env.DB_PROVIDER || 'sqlite').trim().toLowerCase();
 const jwtSecret = process.env.JWT_SECRET || 'dev-only-change-me';
+const refreshSecret = process.env.REFRESH_TOKEN_SECRET || `${jwtSecret}:refresh`;
 
 if (
   process.env.NODE_ENV === 'production' &&
   (jwtSecret === 'dev-only-change-me' || jwtSecret.length < 32)
 ) {
   throw new Error('JWT_SECRET debe configurarse con al menos 32 caracteres en producción.');
+}
+if (
+  process.env.NODE_ENV === 'production' &&
+  (!process.env.REFRESH_TOKEN_SECRET || refreshSecret.length < 32)
+) {
+  throw new Error('REFRESH_TOKEN_SECRET debe configurarse con al menos 32 caracteres en producción.');
 }
 
 let db = null;
@@ -28,9 +35,10 @@ if (provider === 'firestore') {
 
 const app = createApp({
   db,
-  firestore,
+  firestoreDb: firestore,
   provider,
   jwtSecret,
+  refreshSecret,
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173'
 });
 

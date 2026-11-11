@@ -3,6 +3,25 @@ import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'node:fs';
 
 function credentialFromEnvironment() {
+  const inlineJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  if (inlineJson) {
+    try {
+      return cert(JSON.parse(inlineJson));
+    } catch {
+      throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON no contiene un JSON válido.');
+    }
+  }
+
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n').trim();
+  if (clientEmail && privateKey) {
+    return cert({
+      projectId: process.env.FIREBASE_PROJECT_ID?.trim(),
+      clientEmail,
+      privateKey
+    });
+  }
+
   const path = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
   if (!path) return applicationDefault();
   if (!fs.existsSync(path)) {

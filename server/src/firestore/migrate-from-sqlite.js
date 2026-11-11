@@ -3,13 +3,14 @@ import { createDatabase } from '../db.js';
 import { createFirestore } from './client.js';
 import { COLLECTIONS, SUBCOLLECTIONS, documentIds } from './collections.js';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import crypto from 'node:crypto';
 
 loadEnv();
 if (process.env.DB_PROVIDER === 'firestore') throw new Error('La migración debe ejecutarse mientras DB_PROVIDER=sqlite.');
 
 const sqlite = createDatabase(process.env.DB_PATH || './server/data/secret-bite.db');
 const firestore = createFirestore();
-const stats = { users: 0, roles: 0, burgers: 0, campaigns: 0, candidates: 0, votes: 0, orders: 0, items: 0, events: 0, auditLogs: 0 };
+const stats = { users: 0, roles: 0, userEmails: 0, burgers: 0, campaigns: 0, candidates: 0, votes: 0, orders: 0, items: 0, events: 0, auditLogs: 0 };
 let batch = firestore.batch();
 let operations = 0;
 
@@ -25,6 +26,7 @@ async function put(reference, data) {
 
 const timestamp = value => value ? Timestamp.fromDate(new Date(value.endsWith?.('Z') ? value : `${value.replace(' ', 'T')}Z`)) : null;
 const parseJson = (value, fallback) => { try { return JSON.parse(value); } catch { return fallback; } };
+const emailKey = value => crypto.createHash('sha256').update(String(value).trim().toLowerCase()).digest('hex');
 
 try {
   const users = sqlite.prepare(`SELECT u.id,u.name,u.email,u.password_hash passwordHash,u.created_at createdAt,
@@ -36,7 +38,10 @@ try {
       createdAt: timestamp(user.createdAt), migratedAt: FieldValue.serverTimestamp()
     });
     await put(firestore.collection(COLLECTIONS.roles).doc(userId), { userId, role: user.role, updatedAt: FieldValue.serverTimestamp(), updatedBy: 'MIGRATION' });
-    stats.users += 1; stats.roles += 1;
+    await put(firestore.collection(COLLECTIONS.userEmails).doc(emailKey(user.email)), {
+      email: user.email.toLowerCase(), userId, createdAt: FieldValue.serverTimestamp(), source: 'SQLITE_MIGRATION'
+    });
+    stats.users += 1; stats.roles += 1; stats.userEmails += 1;
   }
 
   const burgers = sqlite.prepare(`SELECT id,name,description,ingredients,image_url imageUrl,price_cop priceCop,active,created_at createdAt FROM burgers`).all();

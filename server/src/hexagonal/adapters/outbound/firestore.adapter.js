@@ -4,8 +4,15 @@
  */
 
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import crypto from 'node:crypto';
 import { appendAudit, auditDocument, normalizeTimestamp } from '../../../firestore/audit.js';
-import { COLLECTIONS, SUBCOLLECTIONS, documentIds, ROLES } from '../../../firestore/collections.js';
+import {
+  COLLECTIONS,
+  SUBCOLLECTIONS,
+  documentIds,
+  ROLES,
+  ORDER_STATUSES
+} from '../../../firestore/collections.js';
 import {
   computeCampaignStatus,
   computeNextOrderAndPaymentState,
@@ -13,7 +20,11 @@ import {
 } from '../../domain/entities.js';
 
 const now = () => FieldValue.serverTimestamp();
-const REFRESH_TOKENS_COLLECTION = 'refreshTokens';
+const REFRESH_TOKENS_COLLECTION = COLLECTIONS.refreshTokens;
+
+function normalizedEmailKey(email) {
+  return crypto.createHash('sha256').update(String(email).trim().toLowerCase()).digest('hex');
+}
 
 function toDateMillis(value) {
   if (!value) return 0;
@@ -26,7 +37,7 @@ export function createFirestoreRepositoryAdapter(db) {
   if (!db) throw new Error('Se requiere una instancia de Firestore para el adaptador.');
   const ref = (collection, id) => db.collection(collection).doc(String(id));
 
-  return {
+  const adapter = {
     provider: 'firestore',
 
     authTokens: {
@@ -114,21 +125,45 @@ export function createFirestoreRepositoryAdapter(db) {
         }
         const userRef = db.collection(COLLECTIONS.users).doc();
         const roleRef = ref(COLLECTIONS.roles, userRef.id);
-        const batch = db.batch();
-        batch.create(userRef, {
-          name,
-          email: normalizedEmail,
-          passwordHash,
-          role: 'CLIENT',
-          createdAt: now()
-        });
-        batch.create(roleRef, {
-          userId: userRef.id,
-          role: 'CLIENT',
-          updatedAt: now(),
-          updatedBy: 'SELF_REGISTER'
-        });
-        await batch.commit();
+        const emailRef = ref(COLLECTIONS.userEmails, normalizedEmailKey(normalizedEmail));
+        try {
+          await db.runTransaction(async transaction => {
+            const reservedEmail = await transaction.get(emailRef);
+            if (reservedEmail.exists) {
+              throw Object.assign(new Error('EMAIL_ALREADY_EXISTS'), {
+                status: 409,
+                publicMessage: 'Ese correo ya está registrado.'
+              });
+            }
+            transaction.create(emailRef, {
+              email: normalizedEmail,
+              userId: userRef.id,
+              createdAt: now()
+            });
+            transaction.create(userRef, {
+              name,
+              email: normalizedEmail,
+              passwordHash,
+              role: 'CLIENT',
+              createdAt: now(),
+              updatedAt: now()
+            });
+            transaction.create(roleRef, {
+              userId: userRef.id,
+              role: 'CLIENT',
+              updatedAt: now(),
+              updatedBy: 'SELF_REGISTER'
+            });
+          });
+        } catch (error) {
+          if (error?.status === 409 || error?.code === 6 || error?.code === 'already-exists') {
+            throw Object.assign(new Error('EMAIL_ALREADY_EXISTS'), {
+              status: 409,
+              publicMessage: 'Ese correo ya está registrado.'
+            });
+          }
+          throw error;
+        }
         return this.findById(userRef.id);
       },
 
@@ -577,26 +612,59 @@ export function createFirestoreRepositoryAdapter(db) {
 
       async close(id, winnerBurgerId, actorUserId) {
         const campaignRef = ref(COLLECTIONS.campaigns, id);
-        const batch = db.batch();
-        batch.update(campaignRef, {
-          status: 'CLOSED',
-          published: false,
-          winnerBurgerId: String(winnerBurgerId),
-          closedAt: now(),
-          updatedAt: now()
+        let resolvedWinnerBurgerId = winnerBurgerId;
+        await db.runTransaction(async transaction => {
+          const [campaign, candidates] = await Promise.all([
+            transaction.get(campaignRef),
+            transaction.get(campaignRef.collection(SUBCOLLECTIONS.campaignCandidates))
+          ]);
+          if (!campaign.exists) {
+            throw Object.assign(new Error('CAMPAIGN_NOT_FOUND'), { status: 404 });
+          }
+          if (campaign.data().status !== 'PUBLISHED') {
+            throw Object.assign(new Error('CAMPAIGN_NOT_PUBLISHED'), {
+              status: 409,
+              publicMessage: 'Sólo se puede cerrar una campaña publicada.'
+            });
+          }
+          const winnerCandidate = [...candidates.docs].sort((a, b) => {
+            const aData = a.data();
+            const bData = b.data();
+            return (
+              Number(bData.voteCount || 0) - Number(aData.voteCount || 0) ||
+              Number(bData.desiredQuantity || 0) - Number(aData.desiredQuantity || 0) ||
+              a.id.localeCompare(b.id, undefined, { numeric: true })
+            );
+          })[0];
+          if (!winnerCandidate) {
+            throw Object.assign(new Error('INVALID_WINNER'), {
+              status: 409,
+              publicMessage: 'La campaña no tiene candidatas.'
+            });
+          }
+          resolvedWinnerBurgerId = winnerCandidate.data().burgerId || winnerCandidate.id;
+          transaction.update(campaignRef, {
+            status: 'CLOSED',
+            published: false,
+            winnerBurgerId: String(resolvedWinnerBurgerId),
+            closedAt: now(),
+            updatedAt: now()
+          });
+          transaction.create(
+            db.collection(COLLECTIONS.auditLogs).doc(),
+            auditDocument({
+              actorUserId,
+              action: 'CAMPAIGN_CLOSED',
+              entityType: 'CAMPAIGN',
+              entityId: id,
+              metadata: {
+                winnerBurgerId: resolvedWinnerBurgerId,
+                requestedWinnerBurgerId: winnerBurgerId,
+                tieRule: 'voteCount, desiredQuantity, candidateId'
+              }
+            })
+          );
         });
-        appendAudit(
-          db,
-          {
-            actorUserId,
-            action: 'CAMPAIGN_CLOSED',
-            entityType: 'CAMPAIGN',
-            entityId: id,
-            metadata: { winnerBurgerId }
-          },
-          batch
-        );
-        await batch.commit();
         return this.get(id);
       },
 
@@ -867,7 +935,16 @@ export function createFirestoreRepositoryAdapter(db) {
       },
 
       async getSalesDashboard({ campaignId } = {}) {
-        const orders = await this.listKitchen();
+        const [orders, campaigns] = await Promise.all([
+          this.listKitchen(),
+          adapter.campaigns.list()
+        ]);
+        const currentCampaign = campaignId
+          ? campaigns.find(campaign => String(campaign.id) === String(campaignId)) || null
+          : campaigns.find(campaign => campaign.status === 'ACTIVE') || campaigns[0] || null;
+        const campaignOrders = currentCampaign
+          ? await adapter.campaigns.listVotes(currentCampaign.id)
+          : [];
         const paidOrders = orders.filter(o => o.isPaid && o.status !== 'CANCELLED');
         const unpaidOrders = orders.filter(
           o => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED'
@@ -875,20 +952,74 @@ export function createFirestoreRepositoryAdapter(db) {
         const cancelledOrders = orders.filter(
           o => o.status === 'CANCELLED' || o.paymentStatus === 'CANCELLED'
         );
+        const unlinkedCampaignUnpaid = campaignOrders.filter(
+          vote => !vote.orderId && vote.paymentStatus === 'UNPAID'
+        );
+        const unlinkedCampaignCancelled = campaignOrders.filter(
+          vote => !vote.orderId && vote.paymentStatus === 'CANCELLED'
+        );
         return {
           summary: {
             totalRevenuePaidCop: paidOrders.reduce((s, o) => s + o.totalCop, 0),
             paidOrdersCount: paidOrders.length,
             paidBurgersCount: paidOrders.reduce((s, o) => s + o.totalBurgers, 0),
-            unpaidOrdersCount: unpaidOrders.length,
-            unpaidTotalCop: unpaidOrders.reduce((s, o) => s + o.totalCop, 0),
-            cancelledCount: cancelledOrders.length,
+            unpaidOrdersCount: unpaidOrders.length + unlinkedCampaignUnpaid.length,
+            unpaidTotalCop:
+              unpaidOrders.reduce((s, o) => s + o.totalCop, 0) +
+              unlinkedCampaignUnpaid.reduce(
+                (s, vote) => s + Number(vote.quantity || 1) * Number(vote.burgerPriceCop || 0),
+                0
+              ),
+            cancelledCount: cancelledOrders.length + unlinkedCampaignCancelled.length,
             totalOrdersCount: orders.length,
-            campaignId: campaignId || null
+            campaignId: currentCampaign?.id || null,
+            campaignName: currentCampaign?.name || null,
+            campaignStatus: currentCampaign?.status || null,
+            campaignVotesTotal: campaignOrders.length,
+            campaignBurgersTotal: campaignOrders
+              .filter(vote => vote.paymentStatus !== 'CANCELLED')
+              .reduce((sum, vote) => sum + Number(vote.quantity || 1), 0),
+            campaignPaidCount: campaignOrders.filter(vote => vote.paymentStatus === 'PAID')
+              .length,
+            campaignPaidBurgers: campaignOrders
+              .filter(vote => vote.paymentStatus === 'PAID')
+              .reduce((sum, vote) => sum + Number(vote.quantity || 1), 0),
+            campaignUnpaidCount: campaignOrders.filter(
+              vote => vote.paymentStatus === 'UNPAID'
+            ).length,
+            campaignCancelledCount: campaignOrders.filter(
+              vote => vote.paymentStatus === 'CANCELLED'
+            ).length,
+            campaignPaidRevenueCop: campaignOrders
+              .filter(vote => vote.paymentStatus === 'PAID')
+              .reduce(
+                (sum, vote) =>
+                  sum + Number(vote.quantity || 1) * Number(vote.burgerPriceCop || 0),
+                0
+              ),
+            campaignProjectedRevenueCop: campaignOrders
+              .filter(vote => vote.paymentStatus !== 'CANCELLED')
+              .reduce(
+                (sum, vote) =>
+                  sum + Number(vote.quantity || 1) * Number(vote.burgerPriceCop || 0),
+                0
+              )
           },
-          currentCampaign: null,
-          campaigns: [],
-          campaignOrders: [],
+          currentCampaign,
+          campaigns: campaigns.map(campaign => ({
+            id: campaign.id,
+            name: campaign.name,
+            status: campaign.status,
+            totalVotes: (campaign.candidates || []).reduce(
+              (sum, candidate) => sum + Number(candidate.voteCount || 0),
+              0
+            ),
+            totalDesiredQuantity: (campaign.candidates || []).reduce(
+              (sum, candidate) => sum + Number(candidate.desiredQuantity || 0),
+              0
+            )
+          })),
+          campaignOrders,
           orders
         };
       },
@@ -932,27 +1063,154 @@ export function createFirestoreRepositoryAdapter(db) {
         return this.get(orderId);
       },
 
-      async updateCampaignVoteSale({ voteId, paymentStatus, status, actorUserId }) {
+      async updateCampaignVoteSale({
+        voteId,
+        paymentStatus,
+        status,
+        phone,
+        deliveryAddress,
+        notes,
+        actorUserId
+      }) {
         const voteRef = ref(COLLECTIONS.votes, voteId);
         const voteSnap = await voteRef.get();
         if (!voteSnap.exists) return null;
-        const batch = db.batch();
-        batch.update(voteRef, { paymentStatus: paymentStatus || 'PAID' });
-        appendAudit(
-          db,
-          {
-            actorUserId,
-            action: 'CAMPAIGN_SALE_UPDATED',
-            entityType: 'CAMPAIGN',
-            entityId: voteSnap.data().campaignId,
-            metadata: { voteId, paymentStatus, status }
-          },
-          batch
-        );
-        await batch.commit();
+        const vote = voteSnap.data();
+        const nextPaymentStatus =
+          paymentStatus === 'CANCELLED' || status === 'CANCELLED'
+            ? 'CANCELLED'
+            : paymentStatus ||
+                (status && ['CONFIRMED', 'PREPARING', 'READY', 'DELIVERED'].includes(status)
+                  ? 'PAID'
+                  : vote.paymentStatus || 'UNPAID');
+        const burgerRef = ref(COLLECTIONS.burgers, vote.burgerId);
+        const campaignRef = ref(COLLECTIONS.campaigns, vote.campaignId);
+        const newOrderRef = db.collection(COLLECTIONS.orders).doc();
+        let linkedOrderId = vote.orderId || null;
+
+        await db.runTransaction(async transaction => {
+          const reads = [transaction.get(voteRef), transaction.get(burgerRef), transaction.get(campaignRef)];
+          const [currentVote, burgerDoc, campaignDoc] = await Promise.all(reads);
+          if (!currentVote.exists) {
+            throw Object.assign(new Error('VOTE_NOT_FOUND'), { status: 404 });
+          }
+          const currentLinkedOrderId = currentVote.data().orderId || null;
+          const linkedOrderRef = currentLinkedOrderId
+            ? ref(COLLECTIONS.orders, currentLinkedOrderId)
+            : null;
+          const existingOrder = linkedOrderRef ? await transaction.get(linkedOrderRef) : null;
+          linkedOrderId = currentLinkedOrderId;
+          const burger = burgerDoc.exists ? burgerDoc.data() : {};
+          const campaign = campaignDoc.exists ? campaignDoc.data() : {};
+          const quantity = Number(currentVote.data().quantity || 1);
+          const unitPriceCop = Number(burger.priceCop || 0);
+          let nextStatus = status || existingOrder?.data()?.status || 'PENDING';
+
+          if (nextPaymentStatus === 'PAID') {
+            if (!existingOrder?.exists) {
+              linkedOrderId = newOrderRef.id;
+              if (!status || status === 'PENDING') nextStatus = 'CONFIRMED';
+              transaction.create(newOrderRef, {
+                userId: String(currentVote.data().userId),
+                status: nextStatus,
+                paymentStatus: 'PAID',
+                campaignId: String(currentVote.data().campaignId),
+                voteId: voteRef.id,
+                phone: phone || 'Pedido Campaña',
+                deliveryAddress: deliveryAddress || `Campaña: ${campaign.name || 'Secret Bite'}`,
+                notes: notes || `Pedido generado desde campaña ${campaign.name || ''}`.trim(),
+                totalCop: quantity * unitPriceCop,
+                createdAt: now(),
+                updatedAt: now()
+              });
+              transaction.create(
+                newOrderRef.collection(SUBCOLLECTIONS.orderItems).doc(),
+                {
+                  burgerId: String(currentVote.data().burgerId),
+                  burgerName: burger.name || 'Hamburguesa',
+                  burgerImageUrl: burger.imageUrl || '/assets/hero-burger.jpeg',
+                  ingredients: Array.isArray(burger.ingredients)
+                    ? burger.ingredients
+                    : String(burger.ingredients || '')
+                        .split(',')
+                        .map(value => value.trim())
+                        .filter(Boolean),
+                  removedIngredients: [],
+                  notes: '',
+                  quantity,
+                  unitPriceCop
+                }
+              );
+              transaction.create(newOrderRef.collection(SUBCOLLECTIONS.orderEvents).doc(), {
+                type: 'CAMPAIGN_ORDER_CREATED',
+                from: null,
+                to: nextStatus,
+                actorUserId: String(actorUserId),
+                createdAt: now()
+              });
+            } else {
+              if (!status && ['PENDING', 'CANCELLED'].includes(existingOrder.data().status)) {
+                nextStatus = 'CONFIRMED';
+              }
+              transaction.update(linkedOrderRef, {
+                status: nextStatus,
+                paymentStatus: 'PAID',
+                updatedAt: now()
+              });
+              transaction.create(linkedOrderRef.collection(SUBCOLLECTIONS.orderEvents).doc(), {
+                type: 'SALE_UPDATED',
+                from: existingOrder.data().status,
+                to: nextStatus,
+                actorUserId: String(actorUserId),
+                createdAt: now()
+              });
+            }
+          } else if (linkedOrderRef && existingOrder?.exists) {
+            nextStatus = nextPaymentStatus === 'CANCELLED' ? 'CANCELLED' : 'PENDING';
+            transaction.update(linkedOrderRef, {
+              status: nextStatus,
+              paymentStatus: nextPaymentStatus,
+              updatedAt: now()
+            });
+            transaction.create(linkedOrderRef.collection(SUBCOLLECTIONS.orderEvents).doc(), {
+              type: 'SALE_UPDATED',
+              from: existingOrder.data().status,
+              to: nextStatus,
+              actorUserId: String(actorUserId),
+              createdAt: now()
+            });
+          }
+
+          transaction.update(voteRef, {
+            paymentStatus: nextPaymentStatus,
+            orderId: linkedOrderId,
+            updatedAt: now()
+          });
+          transaction.create(
+            db.collection(COLLECTIONS.auditLogs).doc(),
+            auditDocument({
+              actorUserId,
+              action: 'CAMPAIGN_SALE_UPDATED',
+              entityType: 'CAMPAIGN',
+              entityId: currentVote.data().campaignId,
+              metadata: {
+                voteId,
+                orderId: linkedOrderId,
+                paymentStatus: nextPaymentStatus,
+                status: nextStatus
+              }
+            })
+          );
+        });
+
+        const campaignVotes = await adapter.campaigns.listVotes(vote.campaignId);
         return {
-          voteOrder: { voteId, paymentStatus: paymentStatus || 'PAID' },
-          order: null
+          voteOrder: campaignVotes.find(item => String(item.id) === String(voteId)) || {
+            voteId,
+            paymentStatus: nextPaymentStatus,
+            orderId: linkedOrderId
+          },
+          order: linkedOrderId ? await adapter.orders.get(linkedOrderId) : null
         };
       }
     },
@@ -1021,35 +1279,93 @@ export function createFirestoreRepositoryAdapter(db) {
 
     stats: {
       async getDashboardStats() {
-        const [usersSnap, burgersSnap, campaigns, votesSnap, ordersSnap] = await Promise.all([
+        const [usersSnap, rolesSnap, burgers, campaigns, votesSnap, orders, auditEntries] =
+          await Promise.all([
           db.collection(COLLECTIONS.users).get(),
-          db.collection(COLLECTIONS.burgers).get(),
-          this.campaigns.list(),
+          db.collection(COLLECTIONS.roles).get(),
+          adapter.burgers.list({ includeInactive: true }),
+          adapter.campaigns.list(),
           db.collection(COLLECTIONS.votes).get(),
-          db.collection(COLLECTIONS.orders).get()
+          adapter.orders.listKitchen(),
+          adapter.audit.list(500)
         ]);
+        const roleCounts = { CLIENT: 0, CHEF: 0, ADMIN: 0 };
+        const rolesByUser = new Map(rolesSnap.docs.map(doc => [doc.id, doc.data().role]));
+        usersSnap.docs.forEach(doc => {
+          const role = rolesByUser.get(doc.id) || doc.data().role || 'CLIENT';
+          roleCounts[role] = (roleCounts[role] || 0) + 1;
+        });
+        const votes = votesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const activeOrders = orders.filter(
+          order => !['DELIVERED', 'CANCELLED'].includes(order.status)
+        );
+        const topBurgers = burgers
+          .map(burger => {
+            const burgerVotes = votes.filter(v => String(v.burgerId) === String(burger.id));
+            const orderedQuantity = orders
+              .filter(order => order.status !== 'CANCELLED')
+              .flatMap(order => order.items || [])
+              .filter(item => String(item.burgerId) === String(burger.id))
+              .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            return {
+              id: burger.id,
+              name: burger.name,
+              imageUrl: burger.imageUrl,
+              priceCop: burger.priceCop,
+              active: burger.active,
+              voteCount: burgerVotes.length,
+              desiredQuantity: burgerVotes.reduce(
+                (sum, vote) => sum + Number(vote.quantity || 1),
+                0
+              ),
+              orderedQuantity
+            };
+          })
+          .sort(
+            (a, b) =>
+              b.voteCount - a.voteCount ||
+              b.desiredQuantity - a.desiredQuantity ||
+              b.orderedQuantity - a.orderedQuantity
+          );
+        const auditCounts = new Map();
+        auditEntries.forEach(entry =>
+          auditCounts.set(entry.entityType, (auditCounts.get(entry.entityType) || 0) + 1)
+        );
         return {
           totals: {
-            users: usersSnap.size,
-            staff: 0,
+            users: roleCounts.CLIENT || 0,
+            staff: (roleCounts.ADMIN || 0) + (roleCounts.CHEF || 0),
             totalUsers: usersSnap.size,
-            burgers: burgersSnap.size,
-            totalBurgers: burgersSnap.size,
+            burgers: burgers.filter(burger => burger.active && !burger.deleted).length,
+            totalBurgers: burgers.filter(burger => !burger.deleted).length,
             campaigns: campaigns.length,
-            votes: votesSnap.size,
-            desiredBurgers: votesSnap.size,
-            orders: ordersSnap.size,
-            totalOrders: ordersSnap.size,
-            revenueCop: 0
+            votes: votes.length,
+            desiredBurgers: votes.reduce((sum, vote) => sum + Number(vote.quantity || 1), 0),
+            orders: activeOrders.length,
+            totalOrders: orders.length,
+            revenueCop: orders
+              .filter(order => order.status !== 'CANCELLED')
+              .reduce((sum, order) => sum + Number(order.totalCop || 0), 0)
           },
           campaigns,
           charts: {
-            ordersByStatus: [],
-            topBurgers: [],
-            auditByEntity: []
+            ordersByStatus: ORDER_STATUSES.map(status => {
+              const matches = orders.filter(order => order.status === status);
+              return {
+                status,
+                count: matches.length,
+                totalCop: matches.reduce((sum, order) => sum + Number(order.totalCop || 0), 0)
+              };
+            }),
+            topBurgers,
+            auditByEntity: [...auditCounts.entries()]
+              .map(([entityType, count]) => ({ entityType, count }))
+              .sort((a, b) => b.count - a.count)
           }
         };
       }
     }
   };
+
+  return adapter;
 }

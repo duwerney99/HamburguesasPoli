@@ -39,6 +39,7 @@ export function createApp({
   firestoreDb = null,
   jwtSecret = 'dev-only-change-me',
   refreshSecret = `${jwtSecret}:refresh`,
+  clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   rateLimitMax = 120,
   repositories = null
 } = {}) {
@@ -60,7 +61,19 @@ export function createApp({
   app.locals.useCases = useCases;
 
   app.use(helmet({ contentSecurityPolicy: false }));
-  app.use(cors());
+  const allowedOrigins = String(clientOrigin)
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean);
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(Object.assign(new Error('Origen CORS no permitido.'), { status: 403 }));
+      },
+      credentials: false
+    })
+  );
   app.use(express.json({ limit: '5mb' }));
 
   const limitedVote = rateLimit({
@@ -142,7 +155,7 @@ export function createApp({
 
   const clientDist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
-    '../../client/dist'
+    '../../dist'
   );
   if (fs.existsSync(clientDist)) {
     app.use(express.static(clientDist));
@@ -151,7 +164,9 @@ export function createApp({
 
   app.use((err, _req, res, _next) => {
     console.error(err);
-    res.status(500).json({ error: 'Ocurrió un error interno. Intenta nuevamente.' });
+    res
+      .status(err?.status || 500)
+      .json({ error: err?.publicMessage || (err?.status ? err.message : 'Ocurrió un error interno. Intenta nuevamente.') });
   });
 
   return app;

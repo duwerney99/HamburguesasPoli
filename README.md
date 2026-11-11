@@ -67,9 +67,9 @@ corepack pnpm firestore:check
 corepack pnpm firestore:migrate
 ```
 
-La conexión real requiere `FIREBASE_PROJECT_ID` y una cuenta de servicio configurada mediante `GOOGLE_APPLICATION_CREDENTIALS`. El JSON privado nunca debe copiarse al repositorio ni al frontend.
+La conexión real requiere `FIREBASE_PROJECT_ID`, `REFRESH_TOKEN_SECRET` y una cuenta de servicio configurada mediante `GOOGLE_APPLICATION_CREDENTIALS`. El JSON privado nunca debe copiarse al repositorio ni al frontend.
 
-El esquema y las consultas compartidas viven en `server/src/db.js`; pedidos, usuarios y auditoría están separados en `server/src/modules`. La siguiente evolución es extraer también campañas, votación y hamburguesas a módulos con capas `route/controller/service/repository`. Para PostgreSQL debe conservarse `UNIQUE (user_id, campaign_id)` y el alta del voto debe ejecutarse dentro de una transacción.
+El backend está organizado por módulos hexagonales en `server/src/modules`, con casos de uso desacoplados de la persistencia. `DB_PROVIDER=sqlite` mantiene el entorno local y las pruebas; `DB_PROVIDER=firestore` activa el adaptador de Firestore. El voto único, la reserva de correos, el cierre de campañas y la conversión de ventas a pedidos se ejecutan mediante transacciones.
 
 ## Flujo de pedidos
 

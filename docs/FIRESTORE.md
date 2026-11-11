@@ -12,6 +12,8 @@ Mientras se valida la migración se conserva `DB_PROVIDER=sqlite`. La base SQLit
 |---|---|---|
 | `users/{userId}` | Perfil e identidad de la aplicación | ID de usuario |
 | `roles/{userId}` | Rol vigente y quién lo modificó | Mismo ID de usuario |
+| `userEmails/{emailHash}` | Reserva transaccional para impedir correos duplicados | SHA-256 del correo normalizado |
+| `refreshTokens/{jti}` | Sesiones renovables, expiración y revocación | Identificador JWT `jti` |
 | `burgers/{burgerId}` | Catálogo, ingredientes y precio | ID de hamburguesa |
 | `campaigns/{campaignId}` | Fechas, estado y ganador | ID de campaña |
 | `campaigns/{campaignId}/candidates/{burgerId}` | Candidatas y contador de votos | ID de hamburguesa |
@@ -28,7 +30,7 @@ Los pedidos guardan una copia del nombre, precio e ingredientes. Esto conserva l
 
 1. Crear el proyecto y una base Firestore en modo producción.
 2. Crear una cuenta de servicio de backend y descargar su JSON en una carpeta privada fuera del proyecto.
-3. Copiar `.env.example` a `.env` y completar `FIREBASE_PROJECT_ID` y `GOOGLE_APPLICATION_CREDENTIALS`.
+3. Copiar `.env.example` a `.env` y completar `FIREBASE_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS`, `JWT_SECRET` y `REFRESH_TOKEN_SECRET`.
 4. Instalar dependencias y verificar:
 
 ```powershell
@@ -43,6 +45,18 @@ corepack pnpm firestore:migrate
 ```
 
 La migración usa IDs deterministas y escrituras `merge`, por lo que puede repetirse durante pruebas sin duplicar usuarios, votos ni pedidos. Antes de repetirla en producción debe confirmarse que todavía no existan escrituras nuevas exclusivas en Firestore.
+
+Después de verificar conteos y muestras, activar el proveedor:
+
+```env
+DB_PROVIDER=firestore
+FIREBASE_PROJECT_ID=secret-bite-tu-proyecto
+FIRESTORE_DATABASE_ID=
+GOOGLE_APPLICATION_CREDENTIALS=C:\ruta-privada\service-account.json
+JWT_SECRET=una-clave-aleatoria-de-al-menos-32-caracteres
+REFRESH_TOKEN_SECRET=otra-clave-independiente-de-al-menos-32-caracteres
+CLIENT_ORIGIN=https://tu-sitio.netlify.app
+```
 
 ## Seguridad y despliegue
 

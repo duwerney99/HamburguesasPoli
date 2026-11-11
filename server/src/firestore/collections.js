@@ -5,7 +5,9 @@ export const COLLECTIONS = Object.freeze({
   campaigns: 'campaigns',
   votes: 'votes',
   orders: 'orders',
-  auditLogs: 'auditLogs'
+  auditLogs: 'auditLogs',
+  refreshTokens: 'refreshTokens',
+  userEmails: 'userEmails'
 });
 
 export const SUBCOLLECTIONS = Object.freeze({
