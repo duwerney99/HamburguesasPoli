@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
-const require = createRequire(import.meta.url);
+const require = createRequire(path.resolve(process.cwd(), 'package.json'));
 
 function getDatabaseSync() {
   // SQLite solo se necesita en desarrollo y pruebas. Resolverlo al usarlo evita
