@@ -1,8 +1,18 @@
-import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
+const require = createRequire(import.meta.url);
+
+function getDatabaseSync() {
+  // SQLite solo se necesita en desarrollo y pruebas. Resolverlo al usarlo evita
+  // que el empaquetador de Netlify lo incluya en la función que usa Firestore.
+  const sqliteBuiltin = ['node', 'sqlite'].join(':');
+  return require(sqliteBuiltin).DatabaseSync;
+}
+
 export function createDatabase(filename = ':memory:') {
+  const DatabaseSync = getDatabaseSync();
   if (filename !== ':memory:') fs.mkdirSync(path.dirname(path.resolve(filename)), { recursive: true });
   const db = new DatabaseSync(filename);
   db.exec('PRAGMA foreign_keys = ON;');
