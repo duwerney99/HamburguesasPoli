@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -153,10 +152,7 @@ export function createApp({
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Ruta no encontrada.' }));
 
-  const clientDist = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '../../dist'
-  );
+  const clientDist = path.resolve(process.cwd(), 'dist');
   if (fs.existsSync(clientDist)) {
     app.use(express.static(clientDist));
     app.get(/^\/(?!api).*/, (_req, res) => res.sendFile(path.join(clientDist, 'index.html')));
