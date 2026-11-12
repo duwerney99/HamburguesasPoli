@@ -21,6 +21,7 @@ const statusLabels = {
 export default function Orders() {
   const [burgers, setBurgers] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [campaign, setCampaign] = useState(null);
   const [cart, setCart] = useState([]);
   const [customer, setCustomer] = useState({ phone: '', deliveryAddress: '', notes: '' });
   const [status, setStatus] = useState({
@@ -34,8 +35,20 @@ export default function Orders() {
 
   const load = useCallback(async () => {
     try {
-      const [menu, history] = await Promise.all([api('/burgers'), api('/orders/mine')]);
-      setBurgers(menu.burgers.filter(item => item.active));
+      const [activeCampaign, history] = await Promise.all([
+        api('/campaigns/active'),
+        api('/orders/mine')
+      ]);
+      const currentCampaign = activeCampaign.campaign;
+      const votedBurger = (currentCampaign.candidates || []).find(
+        item => String(item.id) === String(currentCampaign.userVoteBurgerId)
+      );
+      setCampaign(currentCampaign);
+      setBurgers(
+        votedBurger
+          ? [{ ...votedBurger, votedQuantity: Number(currentCampaign.userVoteQuantity || 1) }]
+          : []
+      );
       setOrders(history.orders);
       setStatus(s => ({ ...s, loading: false, error: '' }));
     } catch (error) {
@@ -71,7 +84,7 @@ export default function Orders() {
                 .filter(Boolean),
               removedIngredients: [],
               notes: '',
-              quantity: 1,
+              quantity: Math.min(10, Math.max(1, Number(burger.votedQuantity || 1))),
               priceCop: burger.priceCop
             }
           ]
@@ -163,7 +176,10 @@ export default function Orders() {
 
       <section className="order-layout">
         <div className="order-menu">
-          <h2>Menú disponible</h2>
+          <h2>Tu hamburguesa votada</h2>
+          {!campaign?.userVoteBurgerId && (
+            <p className="empty">Primero debes votar en la campaña activa para habilitar tu hamburguesa.</p>
+          )}
           {burgers.map(burger => (
             <article className="menu-order-card" key={burger.id}>
               <img src={burger.imageUrl || '/assets/hero-burger.jpeg'} alt="" />

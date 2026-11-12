@@ -506,14 +506,14 @@ export function createSqliteRepositoryAdapter(db) {
       async get(id) {
         return getOrder(db, Number(id));
       },
-      async create({ userId, phone, deliveryAddress, notes, items, totalCop }) {
+      async create({ userId, campaignId, voteId, phone, deliveryAddress, notes, items, totalCop }) {
         db.exec('BEGIN IMMEDIATE');
         try {
           const result = db
             .prepare(
-              "INSERT INTO orders(user_id,status,payment_status,phone,delivery_address,notes,total_cop) VALUES(?,'PENDING','UNPAID',?,?,?,?)"
+              "INSERT INTO orders(user_id,status,payment_status,campaign_id,vote_id,phone,delivery_address,notes,total_cop) VALUES(?,'PENDING','UNPAID',?,?,?,?,?,?)"
             )
-            .run(Number(userId), phone, deliveryAddress, notes || '', Number(totalCop || 0));
+            .run(Number(userId), Number(campaignId), Number(voteId), phone, deliveryAddress, notes || '', Number(totalCop || 0));
           const orderId = Number(result.lastInsertRowid);
           const insert = db.prepare(
             'INSERT INTO order_items(order_id,burger_id,burger_name,ingredients_snapshot,removed_ingredients,notes,quantity,unit_price_cop) VALUES(?,?,?,?,?,?,?,?)'
@@ -530,6 +530,7 @@ export function createSqliteRepositoryAdapter(db) {
               Number(item.unitPriceCop || 0)
             );
           }
+          db.prepare('UPDATE votes SET order_id=? WHERE id=?').run(orderId, Number(voteId));
           writeAudit(db, {
             actorUserId: Number(userId),
             action: 'ORDER_CREATED',

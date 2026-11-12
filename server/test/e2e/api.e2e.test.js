@@ -24,6 +24,17 @@ async function loginAs(app, email, password) {
   return response.body.token;
 }
 
+async function voteForFirstCandidate(app, token, quantity = 1) {
+  const campaign = (await request(app).get('/api/campaigns/active').expect(200)).body.campaign;
+  const burgerId = campaign.candidates[0].id;
+  await request(app)
+    .post(`/api/campaigns/${campaign.id}/votes`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ burgerId, quantity })
+    .expect(201);
+  return { campaign, burgerId };
+}
+
 describe('E2E Tests - Plataforma Secret Bite API', () => {
   let db;
   let app;
@@ -309,7 +320,8 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
     it('completa el ciclo de vida del pedido desde creación hasta entrega', async () => {
       const clientToken = await loginAs(app, 'cliente@secretbite.co', 'Cliente123!');
       const chefToken = await loginAs(app, 'chef@secretbite.co', 'Chef123!');
-      const burger = db.prepare('SELECT id,ingredients FROM burgers WHERE active=1 LIMIT 1').get();
+      const { campaign, burgerId } = await voteForFirstCandidate(app, clientToken, 2);
+      const burger = db.prepare('SELECT id,ingredients FROM burgers WHERE id=?').get(burgerId);
       const removedIngredient = burger.ingredients.split(',')[0].trim();
 
       const created = await request(app)
@@ -332,6 +344,8 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
 
       const orderId = created.body.order.id;
       expect(created.body.order.status).toBe('PENDING');
+      expect(created.body.order.campaignId).toBe(campaign.id);
+      expect(created.body.order.voteId).toBeTruthy();
       expect(created.body.order.items[0].removedIngredients).toEqual([removedIngredient]);
 
       for (const nextStatus of ['CONFIRMED', 'PREPARING', 'READY', 'DELIVERED']) {
@@ -352,7 +366,8 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
 
     it('permite al cliente cancelar su propio pedido mientras está en estado PENDING', async () => {
       const clientToken = await loginAs(app, 'cliente@secretbite.co', 'Cliente123!');
-      const burger = db.prepare('SELECT id FROM burgers WHERE active=1 LIMIT 1').get();
+      const { burgerId } = await voteForFirstCandidate(app, clientToken);
+      const burger = { id: burgerId };
 
       const created = await request(app)
         .post('/api/orders')
@@ -370,6 +385,24 @@ describe('E2E Tests - Plataforma Secret Bite API', () => {
         .expect(200);
 
       expect(cancelled.body.order.status).toBe('CANCELLED');
+    });
+
+    it('rechaza pedidos de una hamburguesa distinta a la votada', async () => {
+      const clientToken = await loginAs(app, 'cliente@secretbite.co', 'Cliente123!');
+      const { campaign, burgerId } = await voteForFirstCandidate(app, clientToken);
+      const otherBurger = campaign.candidates.find(candidate => String(candidate.id) !== String(burgerId));
+
+      const response = await request(app)
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({
+          phone: '3009876543',
+          deliveryAddress: 'Carrera 43A # 1-50 Medellín',
+          items: [{ burgerId: otherBurger.id, quantity: 1 }]
+        })
+        .expect(400);
+
+      expect(response.body.error).toMatch(/hamburguesa por la que votaste/i);
     });
   });
 

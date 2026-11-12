@@ -452,7 +452,12 @@ export function createFirestoreRepositoryAdapter(db) {
           cur.desiredQuantity += Number(v.quantity || 1);
           votesByBurger.set(bId, cur);
           if (userId != null && String(v.userId) === String(userId)) {
-            ownVote = { burgerId: v.burgerId, quantity: Number(v.quantity || 1) };
+            ownVote = {
+              id: vDoc.id,
+              burgerId: v.burgerId,
+              quantity: Number(v.quantity || 1),
+              orderId: v.orderId || null
+            };
           }
         });
 
@@ -497,8 +502,10 @@ export function createFirestoreRepositoryAdapter(db) {
           winnerBurgerId: d.winnerBurgerId ?? null,
           closedAt: normalizeTimestamp(d.closedAt),
           candidates,
+          userVoteId: ownVote?.id ?? null,
           userVoteBurgerId: ownVote?.burgerId ?? null,
-          userVoteQuantity: ownVote?.quantity ?? null
+          userVoteQuantity: ownVote?.quantity ?? null,
+          userVoteOrderId: ownVote?.orderId ?? null
         };
       },
 
@@ -822,7 +829,7 @@ export function createFirestoreRepositoryAdapter(db) {
         };
       },
 
-      async create({ userId, phone, deliveryAddress, notes, items, totalCop }) {
+      async create({ userId, campaignId, voteId, phone, deliveryAddress, notes, items, totalCop }) {
         const orderRef = db.collection(COLLECTIONS.orders).doc();
         const batch = db.batch();
         batch.create(orderRef, {
@@ -833,8 +840,8 @@ export function createFirestoreRepositoryAdapter(db) {
           totalCop: Number(totalCop || 0),
           status: 'PENDING',
           paymentStatus: 'UNPAID',
-          campaignId: null,
-          voteId: null,
+          campaignId: String(campaignId),
+          voteId: String(voteId),
           createdAt: now(),
           updatedAt: now()
         });
@@ -858,6 +865,11 @@ export function createFirestoreRepositoryAdapter(db) {
             metadata: { totalCop }
           },
           batch
+        );
+        batch.set(
+          ref(COLLECTIONS.votes, voteId),
+          { orderId: orderRef.id, updatedAt: now() },
+          { merge: true }
         );
         await batch.commit();
         return this.get(orderRef.id);

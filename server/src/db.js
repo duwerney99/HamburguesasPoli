@@ -172,7 +172,7 @@ export function getCampaign(db, id, userId) {
     desiredQuantity: Number(candidate.desiredQuantity || 0)
   }));
   const ownVote = userId
-    ? db.prepare('SELECT burger_id burgerId, quantity FROM votes WHERE campaign_id = ? AND user_id = ?').get(id, userId)
+    ? db.prepare('SELECT id, burger_id burgerId, quantity, order_id orderId FROM votes WHERE campaign_id = ? AND user_id = ?').get(id, userId)
     : null;
   return {
     ...row,
@@ -180,8 +180,10 @@ export function getCampaign(db, id, userId) {
     lifecycleStatus: row.status,
     status: computedStatus,
     candidates,
+    userVoteId: ownVote?.id ?? null,
     userVoteBurgerId: ownVote?.burgerId ?? null,
-    userVoteQuantity: ownVote?.quantity != null ? Number(ownVote.quantity) : null
+    userVoteQuantity: ownVote?.quantity != null ? Number(ownVote.quantity) : null,
+    userVoteOrderId: ownVote?.orderId ?? null
   };
 }
 

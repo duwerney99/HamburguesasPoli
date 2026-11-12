@@ -66,7 +66,13 @@ test('un cliente crea un pedido personalizado y cocina avanza su estado', async 
   try {
     const clientToken = await login(app, 'cliente@secretbite.co', 'Cliente123!');
     const chefToken = await login(app, 'chef@secretbite.co', 'Chef123!');
-    const burger = db.prepare('SELECT id,ingredients FROM burgers WHERE active=1 LIMIT 1').get();
+    const campaign = (await request(app).get('/api/campaigns/active').expect(200)).body.campaign;
+    const burger = db.prepare('SELECT id,ingredients FROM burgers WHERE id=?').get(campaign.candidates[0].id);
+    await request(app)
+      .post(`/api/campaigns/${campaign.id}/votes`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ burgerId: burger.id, quantity: 2 })
+      .expect(201);
     const removedIngredient = burger.ingredients.split(',')[0].trim();
     const created = await request(app).post('/api/orders').set('Authorization', `Bearer ${clientToken}`).send({
       phone: '3001234567', deliveryAddress: 'Calle 10 # 20-30 Medellín', notes: 'Portería',
