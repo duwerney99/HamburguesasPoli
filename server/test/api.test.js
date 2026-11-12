@@ -102,6 +102,34 @@ test('el administrador puede asignar el rol CHEF y queda auditado', async () => 
   } finally { db.close(); }
 });
 
+test('las rutas protegidas usan el rol vigente aunque el token tenga un rol anterior', async () => {
+  const { db, app } = fixture();
+  try {
+    const adminToken = await login(app, 'admin@secretbite.co', 'Admin123!');
+    const chefToken = await login(app, 'chef@secretbite.co', 'Chef123!');
+    const chef = db.prepare("SELECT id FROM users WHERE email='chef@secretbite.co'").get();
+
+    await request(app)
+      .put(`/api/admin/users/${chef.id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'CLIENT' })
+      .expect(200);
+
+    const profile = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${chefToken}`)
+      .expect(200);
+    expect(profile.body.user.role).toBe('CLIENT');
+
+    await request(app)
+      .get('/api/orders/mine')
+      .set('Authorization', `Bearer ${chefToken}`)
+      .expect(200);
+  } finally {
+    db.close();
+  }
+});
+
 test('el dashboard administrativo entrega KPIs y series para gráficas y el router normaliza las rutas de módulos', async () => {
   const { db, app } = fixture();
   try {

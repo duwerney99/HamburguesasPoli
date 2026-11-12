@@ -110,12 +110,24 @@ export function createApp({
     next();
   }
 
-  function requireAuth(req, res, next) {
-    req.auth = readAuth(req);
-    if (!req.auth) {
+  async function requireAuth(req, res, next) {
+    const tokenAuth = readAuth(req);
+    if (!tokenAuth) {
       return res.status(401).json({ error: 'Debes iniciar sesión.' });
     }
-    return next();
+    try {
+      const currentUser = await repositoryAdapter.users.findById(tokenAuth.sub);
+      if (!currentUser) {
+        return res.status(401).json({ error: 'El usuario ya no existe.' });
+      }
+      req.auth = {
+        ...tokenAuth,
+        role: currentUser.app_role || currentUser.role || tokenAuth.role
+      };
+      return next();
+    } catch (error) {
+      return next(error);
+    }
   }
 
   function requireRole(role) {
