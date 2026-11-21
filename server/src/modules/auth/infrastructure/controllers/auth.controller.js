@@ -1,4 +1,5 @@
 import {
+  changePasswordDtoSchema,
   credentialsDtoSchema,
   refreshDtoSchema,
   registerDtoSchema
@@ -61,6 +62,21 @@ export function registerAuthController(
     try {
       const user = await useCases.auth.getProfile(req.auth.sub);
       res.json({ user });
+    } catch (error) {
+      handleModuleControllerError(error, res, next);
+    }
+  });
+
+  app.put('/api/auth/password', requireAuth, async (req, res, next) => {
+    const data = parse(changePasswordDtoSchema, req.body, res);
+    if (!data) return;
+    try {
+      const result = await useCases.auth.changePassword({
+        userId: req.auth.sub,
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword
+      });
+      res.json(result);
     } catch (error) {
       handleModuleControllerError(error, res, next);
     }

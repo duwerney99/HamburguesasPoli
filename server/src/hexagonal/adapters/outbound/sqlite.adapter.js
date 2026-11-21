@@ -128,15 +128,28 @@ export function createSqliteRepositoryAdapter(db) {
       async findByEmail(email) {
         return userWithRole(db, 'u.email=?', String(email || '').trim().toLowerCase()) || null;
       },
-      async createClient({ name, email, passwordHash }) {
+      async createClient({ name, email, passwordHash, role = 'CLIENT', actorUserId = null }) {
+        const assignedRole = ['CLIENT', 'CHEF', 'ADMIN'].includes(role) ? role : 'CLIENT';
+        const baseUserRole = assignedRole === 'ADMIN' ? 'ADMIN' : 'CLIENT';
         try {
           const result = db
-            .prepare("INSERT INTO users(name,email,password_hash,role) VALUES(?,?,?,'CLIENT')")
-            .run(name, String(email).toLowerCase(), passwordHash);
-          db.prepare("INSERT INTO user_roles(user_id,role) VALUES(?,'CLIENT')").run(
-            result.lastInsertRowid
+            .prepare('INSERT INTO users(name,email,password_hash,role) VALUES(?,?,?,?)')
+            .run(name, String(email).toLowerCase(), passwordHash, baseUserRole);
+          const createdId = Number(result.lastInsertRowid);
+          db.prepare('INSERT INTO user_roles(user_id,role) VALUES(?,?)').run(
+            createdId,
+            assignedRole
           );
-          return userWithRole(db, 'u.id=?', Number(result.lastInsertRowid));
+          if (actorUserId != null) {
+            writeAudit(db, {
+              actorUserId: Number(actorUserId),
+              action: 'STAFF_USER_CREATED',
+              entityType: 'USER',
+              entityId: createdId,
+              metadata: { email: String(email).toLowerCase(), role: assignedRole }
+            });
+          }
+          return userWithRole(db, 'u.id=?', createdId);
         } catch (error) {
           if (String(error).includes('UNIQUE')) {
             throw Object.assign(new Error('EMAIL_ALREADY_EXISTS'), {
@@ -161,6 +174,20 @@ export function createSqliteRepositoryAdapter(db) {
           entityType: 'USER',
           entityId: uid,
           metadata: { role }
+        });
+        return userWithRole(db, 'u.id=?', uid);
+      },
+      async updatePassword({ userId, passwordHash }) {
+        const uid = Number(userId);
+        const existing = db.prepare('SELECT id,email FROM users WHERE id=?').get(uid);
+        if (!existing) return null;
+        db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(passwordHash, uid);
+        writeAudit(db, {
+          actorUserId: uid,
+          action: 'USER_PASSWORD_CHANGED',
+          entityType: 'USER',
+          entityId: uid,
+          metadata: { email: existing.email }
         });
         return userWithRole(db, 'u.id=?', uid);
       },

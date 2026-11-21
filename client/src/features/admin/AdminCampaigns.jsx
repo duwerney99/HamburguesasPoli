@@ -23,6 +23,11 @@ export function CampaignModal({ open, campaign, burgers, onClose, onSaved }) {
   );
 
   const [form, setForm] = useState(buildInitial);
+  const [touched, setTouched] = useState({
+    name: false,
+    dates: false,
+    candidates: false
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const { notify } = useToast();
@@ -42,9 +47,35 @@ export function CampaignModal({ open, campaign, burgers, onClose, onSaved }) {
       } else {
         setForm(buildInitial());
       }
+      setTouched({ name: false, dates: false, candidates: false });
       setError('');
     }
   }, [open, campaign, buildInitial]);
+
+  const fieldErrors = useMemo(() => {
+    const errors = {};
+    const trimmedName = String(form.name || '').trim();
+    if (!trimmedName) {
+      errors.name = 'El nombre del ciclo de votación es obligatorio.';
+    } else if (trimmedName.length < 3) {
+      errors.name = `El nombre debe tener mínimo 3 caracteres (llevas ${trimmedName.length}/3).`;
+    }
+
+    const startMs = Date.parse(form.startsAt);
+    const endMs = Date.parse(form.endsAt);
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+      errors.dates = 'Las fechas de apertura y cierre son obligatorias.';
+    } else if (endMs <= startMs) {
+      errors.dates = 'La fecha de cierre debe ser posterior a la fecha de apertura.';
+    }
+
+    if (!Array.isArray(form.burgerIds) || form.burgerIds.length < 2) {
+      errors.candidates = `Selecciona al menos 2 hamburguesas candidatas (seleccionadas: ${form.burgerIds?.length || 0}/2).`;
+    }
+    return errors;
+  }, [form.name, form.startsAt, form.endsAt, form.burgerIds]);
+
+  const isCampaignFormValid = Object.keys(fieldErrors).length === 0;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -212,10 +243,17 @@ export function CampaignModal({ open, campaign, burgers, onClose, onSaved }) {
                 required
                 minLength="3"
                 placeholder="Ej. Burger del Próximo Mes — Edición Noviembre"
+                aria-invalid={touched.name && Boolean(fieldErrors.name) ? 'true' : 'false'}
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
+                onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
                 className="modal-field-input"
               />
+              {touched.name && fieldErrors.name && (
+                <div className="auth-field-feedback error">
+                  <span role="img" aria-label="Error">✕</span> {fieldErrors.name}
+                </div>
+              )}
             </div>
 
             {/* Fechas de Apertura y Cierre */}
@@ -231,6 +269,7 @@ export function CampaignModal({ open, campaign, burgers, onClose, onSaved }) {
                   required
                   value={form.startsAt}
                   onChange={e => setForm({ ...form, startsAt: e.target.value })}
+                  onBlur={() => setTouched(prev => ({ ...prev, dates: true }))}
                   className="modal-field-input"
                 />
               </div>
@@ -247,8 +286,14 @@ export function CampaignModal({ open, campaign, burgers, onClose, onSaved }) {
                   min={tomorrow.toISOString().slice(0, 16)}
                   value={form.endsAt}
                   onChange={e => setForm({ ...form, endsAt: e.target.value })}
+                  onBlur={() => setTouched(prev => ({ ...prev, dates: true }))}
                   className="modal-field-input"
                 />
+                {touched.dates && fieldErrors.dates && (
+                  <div className="auth-field-feedback error">
+                    <span role="img" aria-label="Error">✕</span> {fieldErrors.dates}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -345,10 +390,15 @@ export function CampaignModal({ open, campaign, burgers, onClose, onSaved }) {
           </div>
 
           <footer className="admin-modal-footer">
+            {!isCampaignFormValid && (
+              <span className="form-required-hint mr-auto">
+                {fieldErrors.candidates || 'Completa todos los campos obligatorios (*) para guardar.'}
+              </span>
+            )}
             <button type="button" className="button ghost" onClick={onClose} disabled={submitting}>
               Cancelar
             </button>
-            <button type="submit" className="button" disabled={submitting}>
+            <button type="submit" className="button" disabled={submitting || !isCampaignFormValid}>
               {submitting ? (
                 <>
                   <Spinner size="sm" label="Guardando ciclo de votación…" />

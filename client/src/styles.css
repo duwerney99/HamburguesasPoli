@@ -2308,6 +2308,435 @@
     margin-block-start: 1.35rem;
   }
 
+  .auth-field {
+    margin-block-start: 0.95rem;
+  }
+
+  .form-field-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-block-end: 0.35rem;
+  }
+
+  .form-field-head > label {
+    margin: 0 !important;
+  }
+
+  .auth-field > label {
+    margin: 0 0 0.38rem;
+  }
+
+  .auth-field input {
+    margin-block-start: 0;
+  }
+
+  .auth-field input.input-mismatch,
+  .cart-panel input.input-mismatch {
+    border-color: #f87171;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+  }
+
+  .auth-field input.input-confirmed,
+  .cart-panel input.input-confirmed {
+    border-color: rgba(34, 197, 94, 0.65);
+  }
+
+  .form-required-hint {
+    margin: 0.85rem 0 0;
+    padding: 0.52rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 181, 71, 0.08);
+    border: 1px solid rgba(255, 181, 71, 0.25);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .admin-modal-footer .form-required-hint {
+    margin: 0;
+    margin-inline-end: auto;
+  }
+
+  .password-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .password-input-wrap input {
+    padding-inline-end: 5.5rem;
+  }
+
+  .password-input-wrap input.input-mismatch {
+    border-color: #f87171;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+  }
+
+  .password-input-wrap input.input-confirmed {
+    border-color: rgba(34, 197, 94, 0.65);
+  }
+
+  .password-toggle-btn {
+    position: absolute;
+    inset-inline-end: 0.45rem;
+    inset-block-start: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    padding: 0.34rem 0.6rem;
+    border-radius: calc(var(--radius-sm) - 3px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .password-toggle-btn:hover {
+    color: #fff;
+    background: rgba(255, 94, 31, 0.16);
+    border-color: rgba(255, 94, 31, 0.42);
+  }
+
+  .password-toggle-btn[aria-pressed="true"] {
+    color: var(--amber);
+    background: rgba(255, 181, 71, 0.14);
+    border-color: rgba(255, 181, 71, 0.38);
+  }
+
+  .auth-field-feedback {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-block-start: 0.42rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .auth-field-feedback.error {
+    color: #fca5a5;
+  }
+
+  .auth-field-feedback.success {
+    color: #86efac;
+  }
+
+  /* Indicador informativo y checklist de requisitos de contraseña en verde */
+  .password-info-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 181, 71, 0.35);
+    background: rgba(255, 181, 71, 0.1);
+    color: var(--amber);
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  .password-info-trigger:hover {
+    background: rgba(255, 181, 71, 0.18);
+    border-color: var(--amber);
+  }
+
+  .password-info-trigger.all-met {
+    color: #86efac;
+    background: rgba(34, 197, 94, 0.14);
+    border-color: rgba(34, 197, 94, 0.45);
+  }
+
+  .password-rules-box {
+    margin-block-start: 0.55rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--line-strong);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    transition: border-color 0.22s ease, background-color 0.22s ease;
+  }
+
+  .password-rules-box.all-met {
+    background: rgba(22, 163, 74, 0.09);
+    border-color: rgba(34, 197, 94, 0.45);
+  }
+
+  .password-rules-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .password-rules-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+
+  .password-rules-box.all-met .password-rules-title {
+    color: #86efac;
+  }
+
+  .password-rules-badge {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 0.14rem 0.48rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-secondary);
+  }
+
+  .password-rules-badge.met {
+    background: rgba(34, 197, 94, 0.22);
+    color: #bbf7d0;
+    border: 1px solid rgba(34, 197, 94, 0.45);
+  }
+
+  .password-strength-meter {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.32rem;
+  }
+
+  .strength-segment {
+    block-size: 0.28rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .strength-segment.partial {
+    background: var(--amber);
+  }
+
+  .strength-segment.met {
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.45);
+  }
+
+  .password-rules-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.38rem;
+  }
+
+  .password-rule-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.34rem 0.52rem;
+    border-radius: 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .password-rule-item.met {
+    color: #bbf7d0;
+    background: rgba(34, 197, 94, 0.13);
+    border-color: rgba(34, 197, 94, 0.36);
+  }
+
+  .password-rule-icon {
+    inline-size: 1.15rem;
+    block-size: 1.15rem;
+    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--muted);
+    transition: all 0.2s ease;
+  }
+
+  .password-rule-item.met .password-rule-icon {
+    background: #22c55e;
+    color: #041309;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22);
+  }
+
+  .password-rule-text {
+    flex: 1;
+    min-inline-size: 0;
+  }
+
+  .password-rule-tag {
+    font-family: var(--font-mono);
+    font-size: 0.67rem;
+    font-weight: 700;
+    padding: 0.1rem 0.38rem;
+    border-radius: 0.32rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--muted);
+  }
+
+  .password-rule-item.met .password-rule-tag {
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+  }
+
+  /* Selector de Rol Operativo (ADMIN / CHEF) en modal de Creación de Usuario */
+  .staff-role-picker {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 640px) {
+    .staff-role-picker {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .staff-role-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    margin: 0 !important;
+    transition: all 0.18s ease;
+  }
+
+  .staff-role-option:hover {
+    background: rgba(255, 255, 255, 0.055);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .staff-role-option.selected {
+    background: rgba(255, 94, 31, 0.11);
+    border-color: var(--orange);
+    box-shadow: 0 0 0 2px rgba(255, 94, 31, 0.2);
+  }
+
+  .staff-role-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    inline-size: 0;
+    block-size: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .staff-role-option-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .staff-role-option-head strong {
+    font-size: 0.86rem;
+    color: #fff;
+  }
+
+  .staff-role-option p {
+    margin: 0;
+    font-size: 0.73rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  /* Módulo Cambiar Contraseña (Panel Administrativo y Portal de Clientes) */
+  .security-layout {
+    max-inline-size: 38rem;
+    margin-inline: auto;
+    padding-block: 0.5rem 2rem;
+  }
+
+  .security-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.5rem, 3vw, 2.25rem);
+    box-shadow: var(--shadow-card);
+  }
+
+  .security-card-head h2 {
+    margin: 0.65rem 0 0.35rem;
+    font-size: 1.65rem;
+  }
+
+  .security-card-head > p {
+    margin: 0 0 1.1rem;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .security-user-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.95rem;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--line-strong);
+    margin-block-end: 0.5rem;
+  }
+
+  .security-user-pill strong {
+    display: block;
+    font-size: 0.88rem;
+    color: #fff;
+  }
+
+  .security-user-pill small {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--amber);
+  }
+
+  .security-form input {
+    display: block;
+    inline-size: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    padding: 0.72rem 0.9rem;
+    color: #fff;
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .security-form input:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(255, 94, 31, 0.16);
+  }
+
+  .security-form .button {
+    margin-block-start: 1.35rem;
+  }
+
   .switch-auth {
     inline-size: 100%;
     margin-block-start: 0.85rem;

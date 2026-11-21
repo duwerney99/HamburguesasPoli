@@ -1,3 +1,6 @@
-import { roleUpdateSchema as roleUpdateDtoSchema } from '../../../../hexagonal/domain/schemas.js';
+import {
+  roleUpdateSchema as roleUpdateDtoSchema,
+  staffCreateSchema as staffCreateDtoSchema
+} from '../../../../hexagonal/domain/schemas.js';
 
-export { roleUpdateDtoSchema };
+export { roleUpdateDtoSchema, staffCreateDtoSchema };

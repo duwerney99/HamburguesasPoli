@@ -24,6 +24,7 @@ export default function Orders() {
   const [campaign, setCampaign] = useState(null);
   const [cart, setCart] = useState([]);
   const [customer, setCustomer] = useState({ phone: '', deliveryAddress: '', notes: '' });
+  const [touched, setTouched] = useState({ phone: false, deliveryAddress: false });
   const [status, setStatus] = useState({
     loading: true,
     busy: false,
@@ -32,6 +33,30 @@ export default function Orders() {
     message: ''
   });
   const { notify } = useToast();
+
+  const fieldErrors = useMemo(() => {
+    const errors = {};
+    const phone = customer.phone.trim();
+    if (!phone) {
+      errors.phone = 'El teléfono de contacto es obligatorio.';
+    } else if (phone.length < 7) {
+      errors.phone = `Ingresa al menos 7 dígitos para el teléfono (llevas ${phone.length}/7).`;
+    }
+
+    const address = customer.deliveryAddress.trim();
+    if (!address) {
+      errors.deliveryAddress = 'La dirección de entrega es obligatoria.';
+    } else if (address.length < 8) {
+      errors.deliveryAddress = `Ingresa una dirección completa de mínimo 8 caracteres (llevas ${address.length}/8).`;
+    }
+
+    if (cart.length === 0) {
+      errors.cart = 'Agrega al menos una hamburguesa a tu pedido.';
+    }
+    return errors;
+  }, [customer.phone, customer.deliveryAddress, cart.length]);
+
+  const isOrderFormValid = Object.keys(fieldErrors).length === 0;
 
   const load = useCallback(async () => {
     try {
@@ -102,12 +127,21 @@ export default function Orders() {
 
   async function submit(event) {
     event.preventDefault();
+    setTouched({ phone: true, deliveryAddress: true });
+    if (!isOrderFormValid) {
+      const firstError =
+        fieldErrors.cart || fieldErrors.phone || fieldErrors.deliveryAddress;
+      setStatus(s => ({ ...s, error: firstError }));
+      return;
+    }
     setStatus(s => ({ ...s, busy: true, error: '', message: '' }));
     try {
       await api('/orders', {
         method: 'POST',
         body: JSON.stringify({
-          ...customer,
+          phone: customer.phone.trim(),
+          deliveryAddress: customer.deliveryAddress.trim(),
+          notes: customer.notes.trim(),
           items: cart.map(({ burgerId, quantity, removedIngredients, notes }) => ({
             burgerId,
             quantity,
@@ -118,6 +152,7 @@ export default function Orders() {
       });
       setCart([]);
       setCustomer({ phone: '', deliveryAddress: '', notes: '' });
+      setTouched({ phone: false, deliveryAddress: false });
       await load();
       const msg = 'Pedido creado y enviado directamente a cocina.';
       setStatus(s => ({ ...s, busy: false, message: msg }));
@@ -249,36 +284,120 @@ export default function Orders() {
               </label>
             </article>
           ))}
-          <label>
-            Teléfono
+          <div className="auth-field">
+            <div className="form-field-head">
+              <label htmlFor="order-phone">
+                Teléfono <span className="required-mark">*</span>
+              </label>
+              <small className="field-hint">Mín. 7 dígitos</small>
+            </div>
             <input
+              id="order-phone"
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              placeholder="Ej. 300 123 4567"
               required
               minLength="7"
+              aria-invalid={touched.phone && Boolean(fieldErrors.phone) ? 'true' : 'false'}
+              aria-describedby={touched.phone && fieldErrors.phone ? 'order-phone-error' : undefined}
+              className={
+                touched.phone
+                  ? fieldErrors.phone
+                    ? 'input-mismatch'
+                    : 'input-confirmed'
+                  : ''
+              }
               value={customer.phone}
               onChange={e => setCustomer({ ...customer, phone: e.target.value })}
+              onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
             />
-          </label>
-          <label>
-            Dirección de entrega
+            {touched.phone && fieldErrors.phone && (
+              <div id="order-phone-error" className="auth-field-feedback error">
+                <span role="img" aria-label="Error">
+                  ✕
+                </span>{' '}
+                {fieldErrors.phone}
+              </div>
+            )}
+          </div>
+
+          <div className="auth-field">
+            <div className="form-field-head">
+              <label htmlFor="order-address">
+                Dirección de entrega <span className="required-mark">*</span>
+              </label>
+              <small className="field-hint">Mín. 8 caracteres</small>
+            </div>
             <input
+              id="order-address"
+              name="deliveryAddress"
+              type="text"
+              autoComplete="street-address"
+              placeholder="Ej. Cra 43A # 10-50, El Poblado"
               required
               minLength="8"
+              aria-invalid={
+                touched.deliveryAddress && Boolean(fieldErrors.deliveryAddress) ? 'true' : 'false'
+              }
+              aria-describedby={
+                touched.deliveryAddress && fieldErrors.deliveryAddress
+                  ? 'order-address-error'
+                  : undefined
+              }
+              className={
+                touched.deliveryAddress
+                  ? fieldErrors.deliveryAddress
+                    ? 'input-mismatch'
+                    : 'input-confirmed'
+                  : ''
+              }
               value={customer.deliveryAddress}
               onChange={e => setCustomer({ ...customer, deliveryAddress: e.target.value })}
+              onBlur={() => setTouched(prev => ({ ...prev, deliveryAddress: true }))}
             />
-          </label>
-          <label>
-            Nota general
+            {touched.deliveryAddress && fieldErrors.deliveryAddress && (
+              <div id="order-address-error" className="auth-field-feedback error">
+                <span role="img" aria-label="Error">
+                  ✕
+                </span>{' '}
+                {fieldErrors.deliveryAddress}
+              </div>
+            )}
+          </div>
+
+          <div className="auth-field">
+            <div className="form-field-head">
+              <label htmlFor="order-notes">Nota general</label>
+              <small className="field-hint">Opcional</small>
+            </div>
             <textarea
+              id="order-notes"
+              name="notes"
+              placeholder="Portería, piso o indicaciones de entrega…"
               value={customer.notes}
               onChange={e => setCustomer({ ...customer, notes: e.target.value })}
             />
-          </label>
+          </div>
+
           <div className="cart-total">
             <span>Total</span>
             <strong>{money(total)}</strong>
           </div>
-          <button className="button full" disabled={!cart.length || status.busy}>
+
+          {!isOrderFormValid && (
+            <p className="form-required-hint" role="status">
+              {fieldErrors.cart
+                ? 'Agrega tu hamburguesa y completa Teléfono (*) y Dirección (*).'
+                : 'Diligencia los campos obligatorios (*) para habilitar la confirmación.'}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="button full"
+            disabled={!isOrderFormValid || status.busy}
+          >
             {status.busy ? (
               <>
                 <Spinner size="sm" label="Enviando pedido a cocina…" />

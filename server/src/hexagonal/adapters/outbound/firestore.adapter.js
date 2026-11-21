@@ -114,7 +114,8 @@ export function createFirestoreRepositoryAdapter(db) {
         return this.findById(snapshot.docs[0].id);
       },
 
-      async createClient({ name, email, passwordHash }) {
+      async createClient({ name, email, passwordHash, role = 'CLIENT', actorUserId = null }) {
+        const assignedRole = ['CLIENT', 'CHEF', 'ADMIN'].includes(role) ? role : 'CLIENT';
         const normalizedEmail = String(email || '').trim().toLowerCase();
         const existing = await this.findByEmail(normalizedEmail);
         if (existing) {
@@ -144,15 +145,15 @@ export function createFirestoreRepositoryAdapter(db) {
               name,
               email: normalizedEmail,
               passwordHash,
-              role: 'CLIENT',
+              role: assignedRole,
               createdAt: now(),
               updatedAt: now()
             });
             transaction.create(roleRef, {
               userId: userRef.id,
-              role: 'CLIENT',
+              role: assignedRole,
               updatedAt: now(),
-              updatedBy: 'SELF_REGISTER'
+              updatedBy: actorUserId != null ? String(actorUserId) : 'SELF_REGISTER'
             });
           });
         } catch (error) {
@@ -184,6 +185,30 @@ export function createFirestoreRepositoryAdapter(db) {
             entityType: 'USER',
             entityId: userId,
             metadata: { role }
+          },
+          batch
+        );
+        await batch.commit();
+        return this.findById(userId);
+      },
+
+      async updatePassword({ userId, passwordHash }) {
+        const userRef = ref(COLLECTIONS.users, userId);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) return null;
+        const batch = db.batch();
+        batch.update(userRef, {
+          passwordHash,
+          updatedAt: now()
+        });
+        appendAudit(
+          db,
+          {
+            actorUserId: userId,
+            action: 'USER_PASSWORD_CHANGED',
+            entityType: 'USER',
+            entityId: userId,
+            metadata: { email: userDoc.data()?.email || '' }
           },
           batch
         );

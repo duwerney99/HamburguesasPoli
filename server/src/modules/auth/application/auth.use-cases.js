@@ -123,6 +123,31 @@ export function createAuthUseCases({
         throw DomainException.unauthorized('El usuario ya no existe.', 'USER_DELETED');
       }
       return toPublicAuthUserProjection(user);
+    },
+
+    async changePassword({ userId, currentPassword, newPassword }) {
+      const user = await ports.users.findById(userId);
+      if (!user) {
+        throw DomainException.notFound('Usuario no encontrado.', 'USER_NOT_FOUND');
+      }
+      const storedHash = user.password_hash || user.passwordHash;
+      if (!storedHash || !bcrypt.compareSync(currentPassword, storedHash)) {
+        throw DomainException.badRequest(
+          'La contraseña actual es incorrecta.',
+          'INVALID_CURRENT_PASSWORD'
+        );
+      }
+      if (bcrypt.compareSync(newPassword, storedHash)) {
+        throw DomainException.badRequest(
+          'La nueva contraseña debe ser diferente a la contraseña actual.',
+          'SAME_PASSWORD'
+        );
+      }
+      const passwordHash = bcrypt.hashSync(newPassword, 10);
+      await ports.users.updatePassword({ userId, passwordHash });
+      return {
+        message: 'Tu contraseña ha sido actualizada exitosamente.'
+      };
     }
   };
 }

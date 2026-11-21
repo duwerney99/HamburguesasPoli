@@ -1,4 +1,4 @@
-import { roleUpdateDtoSchema } from '../dtos/users.dto.js';
+import { roleUpdateDtoSchema, staffCreateDtoSchema } from '../dtos/users.dto.js';
 import { handleModuleControllerError } from '../../../shared/infrastructure/http/error-handler.js';
 
 /**
@@ -17,6 +17,23 @@ export function registerUsersController(app, { useCases, requireAuth, requireRol
         sortDir: req.query.sortDir ?? 'desc'
       });
       res.json(result);
+    } catch (error) {
+      handleModuleControllerError(error, res, next);
+    }
+  });
+
+  app.post('/api/admin/users', requireAuth, requireRole('ADMIN'), async (req, res, next) => {
+    const data = parse(staffCreateDtoSchema, req.body, res);
+    if (!data) return;
+    try {
+      const user = await useCases.users.createStaffUser({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+        actorUserId: req.auth.sub
+      });
+      res.status(201).json({ user });
     } catch (error) {
       handleModuleControllerError(error, res, next);
     }

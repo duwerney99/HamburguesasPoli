@@ -15,13 +15,52 @@ export const credentialsSchema = z.object({
   password: z.string().min(8).max(72)
 });
 
-export const registerSchema = credentialsSchema.extend({
-  name: z.string().trim().min(2).max(80)
-});
+export const registerPasswordSchema = z
+  .string()
+  .min(8, 'La contraseña debe tener al menos 8 caracteres.')
+  .max(72, 'La contraseña no puede superar 72 caracteres.')
+  .refine(val => /[A-ZÁÉÍÓÚÑ]/.test(val), {
+    message: 'La contraseña debe incluir al menos una letra mayúscula.'
+  })
+  .refine(val => /[a-záéíóúñ]/.test(val), {
+    message: 'La contraseña debe incluir al menos una letra minúscula.'
+  })
+  .refine(val => /[^A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s]/.test(val), {
+    message: 'La contraseña debe incluir al menos un carácter especial (ej. . - , * ! @ # $).'
+  });
+
+export const registerSchema = credentialsSchema
+  .extend({
+    name: z.string().trim().min(2).max(80),
+    password: registerPasswordSchema,
+    confirmPassword: z.string().min(8).max(72).optional()
+  })
+  .refine(
+    data => data.confirmPassword === undefined || data.password === data.confirmPassword,
+    {
+      message: 'Las contraseñas no coinciden.',
+      path: ['confirmPassword']
+    }
+  );
 
 export const refreshSchema = z.object({
   refreshToken: z.string().trim().min(10)
 });
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Ingresa tu contraseña actual.').max(72),
+    newPassword: registerPasswordSchema,
+    confirmPassword: z.string().min(8, 'Confirma tu nueva contraseña.').max(72)
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: 'La nueva contraseña y su confirmación no coinciden.',
+    path: ['confirmPassword']
+  })
+  .refine(data => data.currentPassword !== data.newPassword, {
+    message: 'La nueva contraseña debe ser diferente a la contraseña actual.',
+    path: ['newPassword']
+  });
 
 export const burgerSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -88,4 +127,27 @@ export const campaignVoteOrderUpdateSchema = z.object({
 export const roleUpdateSchema = z.object({
   role: z.enum(ROLES)
 });
+
+export const staffCreateSchema = z
+  .object({
+    name: z.string().trim().min(2, 'Ingresa un nombre válido (mín. 2 caracteres).').max(80),
+    email: z
+      .string()
+      .trim()
+      .email('Ingresa un correo electrónico válido.')
+      .max(160)
+      .transform(value => value.toLowerCase()),
+    password: registerPasswordSchema,
+    confirmPassword: z.string().min(8).max(72).optional(),
+    role: z.enum(['ADMIN', 'CHEF'], {
+      errorMap: () => ({ message: 'Selecciona un rol válido (ADMIN o CHEF).' })
+    })
+  })
+  .refine(
+    data => data.confirmPassword === undefined || data.password === data.confirmPassword,
+    {
+      message: 'Las contraseñas no coinciden.',
+      path: ['confirmPassword']
+    }
+  );
 

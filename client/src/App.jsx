@@ -16,6 +16,7 @@ import {
   saveSessionTokens
 } from './api.js';
 import Orders from './features/Orders.jsx';
+import ChangePassword from './features/ChangePassword.jsx';
 import AdminLayout from './features/admin/AdminLayout.jsx';
 import { formatCop } from './features/admin/adminShared.jsx';
 import { AlertBanner, LoaderCard, Spinner, ToastProvider, useToast } from './ui/Feedback.jsx';
@@ -75,6 +76,15 @@ function Header({ user, logout }) {
             <span>Pedidos</span>
           </NavLink>
         )}
+        {user && (
+          <NavLink to="/seguridad" className={({ isActive }) => `site-nav-item ${isActive ? 'active' : ''}`}>
+            <svg className="site-nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span>Cambiar contraseña</span>
+          </NavLink>
+        )}
         {user?.role === 'CHEF' && (
           <NavLink
             to="/admin/cocina"
@@ -124,19 +134,214 @@ function Header({ user, logout }) {
   );
 }
 
+function EyeIcon({ open }) {
+  return open ? (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  ) : (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function evaluatePasswordRules(password = '') {
+  const value = String(password || '');
+  return [
+    {
+      id: 'minLength',
+      label: 'Mínimo 8 caracteres',
+      detail: `${Math.min(value.length, 8)}/8`,
+      met: value.length >= 8
+    },
+    {
+      id: 'uppercase',
+      label: 'Al menos 1 letra mayúscula (A–Z)',
+      detail: 'A–Z',
+      met: /[A-ZÁÉÍÓÚÑ]/.test(value)
+    },
+    {
+      id: 'lowercase',
+      label: 'Al menos 1 letra minúscula (a–z)',
+      detail: 'a–z',
+      met: /[a-záéíóúñ]/.test(value)
+    },
+    {
+      id: 'special',
+      label: 'Al menos 1 carácter especial (. - , * ! @ # $ % & _ +)',
+      detail: '.-,*!@#',
+      met: /[^A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s]/.test(value)
+    }
+  ];
+}
+
 function Auth({ onAuth, goHome }) {
   const [register, setRegister] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    password: false,
+    confirmPassword: false
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showRulesHelp, setShowRulesHelp] = useState(true);
   const [status, setStatus] = useState({ loading: false, error: '' });
   const { notify } = useToast();
 
+  const passwordRules = useMemo(() => evaluatePasswordRules(form.password), [form.password]);
+  const metRulesCount = useMemo(
+    () => passwordRules.filter(rule => rule.met).length,
+    [passwordRules]
+  );
+  const allPasswordRulesMet = metRulesCount === passwordRules.length;
+
+  const fieldErrors = useMemo(() => {
+    const errors = {};
+    if (register) {
+      const trimmedName = form.name.trim();
+      if (!trimmedName) {
+        errors.name = 'El nombre completo es obligatorio.';
+      } else if (trimmedName.length < 2) {
+        errors.name = 'Ingresa al menos 2 caracteres para tu nombre.';
+      }
+    }
+
+    const trimmedEmail = form.email.trim();
+    if (!trimmedEmail) {
+      errors.email = 'El correo electrónico es obligatorio.';
+    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+      errors.email = 'Ingresa un correo electrónico válido (ej. tu@correo.com).';
+    }
+
+    if (!form.password) {
+      errors.password = 'La contraseña es obligatoria.';
+    } else if (!register) {
+      if (form.password.length < 8) {
+        errors.password = `La contraseña debe tener mínimo 8 caracteres (llevas ${form.password.length}/8).`;
+      }
+    } else {
+      const firstUnmet = passwordRules.find(rule => !rule.met);
+      if (firstUnmet) {
+        errors.password = `Falta cumplir: ${firstUnmet.label}.`;
+      }
+    }
+
+    if (register) {
+      if (!form.confirmPassword) {
+        errors.confirmPassword = 'Debes confirmar tu contraseña.';
+      } else if (form.password !== form.confirmPassword) {
+        errors.confirmPassword = 'Las contraseñas no coinciden. Verifica que ambas sean iguales.';
+      } else if (!allPasswordRulesMet) {
+        errors.confirmPassword = 'La contraseña principal aún no cumple todos los requisitos.';
+      }
+    }
+
+    return errors;
+  }, [register, form, passwordRules, allPasswordRulesMet]);
+
+  const isFormValid = Object.keys(fieldErrors).length === 0;
+
+  const passwordMismatch =
+    register &&
+    touched.confirmPassword &&
+    Boolean(fieldErrors.confirmPassword);
+
+  const passwordConfirmed =
+    register &&
+    allPasswordRulesMet &&
+    form.confirmPassword.length >= 8 &&
+    form.password === form.confirmPassword;
+
+  function updateField(field, value, inputEl) {
+    setForm(prev => ({ ...prev, [field]: value }));
+    if (inputEl && typeof inputEl.setCustomValidity === 'function') {
+      inputEl.setCustomValidity('');
+    }
+    if (status.error) {
+      setStatus(s => ({ ...s, error: '' }));
+    }
+  }
+
+  function markTouched(field) {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  }
+
   async function submit(event) {
     event.preventDefault();
+    setTouched({
+      name: true,
+      email: true,
+      password: true,
+      confirmPassword: true
+    });
+
+    if (!isFormValid) {
+      const firstError =
+        fieldErrors.name ||
+        fieldErrors.email ||
+        fieldErrors.password ||
+        fieldErrors.confirmPassword ||
+        'Completa todos los campos obligatorios correctamente.';
+      setStatus({ loading: false, error: firstError });
+      notify({
+        type: 'error',
+        title: 'Campos pendientes por diligenciar',
+        message: firstError
+      });
+      return;
+    }
+
     setStatus({ loading: true, error: '' });
     try {
+      const payload = register
+        ? {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            password: form.password,
+            confirmPassword: form.confirmPassword
+          }
+        : {
+            email: form.email.trim(),
+            password: form.password
+          };
+
       const data = await api(`/auth/${register ? 'register' : 'login'}`, {
         method: 'POST',
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       });
       notify({
         type: 'success',
@@ -152,6 +357,20 @@ function Auth({ onAuth, goHome }) {
         message: error.message
       });
     }
+  }
+
+  function toggleAuthMode() {
+    setRegister(prev => !prev);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setTouched({
+      name: false,
+      email: false,
+      password: false,
+      confirmPassword: false
+    });
+    setForm(prev => ({ ...prev, password: '', confirmPassword: '' }));
+    setStatus({ loading: false, error: '' });
   }
 
   return (
@@ -173,55 +392,357 @@ function Auth({ onAuth, goHome }) {
         </div>
       </section>
       <section className="auth-card">
-        <button className="back-link" onClick={goHome}>
+        <button type="button" className="back-link" onClick={goHome}>
           ← Volver a la campaña
         </button>
-        <h2>{register ? 'Crea tu cuenta' : 'Bienvenido de vuelta'}</h2>
+        <h2 id="auth-form-heading">{register ? 'Crea tu cuenta' : 'Bienvenido de vuelta'}</h2>
         <p>{register ? 'Únete y participa en la campaña activa.' : 'Ingresa para emitir o consultar tu voto.'}</p>
-        <form onSubmit={submit}>
+        <span id="password-toggle-warning" className="visually-hidden">
+          Advertencia: esto mostrará tu contraseña en la pantalla.
+        </span>
+        <form onSubmit={submit} aria-labelledby="auth-form-heading" noValidate>
           {register && (
-            <label>
-              Nombre completo
+            <div className="auth-field">
+              <div className="form-field-head">
+                <label htmlFor="auth-fullname">
+                  Nombre completo <span className="required-mark">*</span>
+                </label>
+                <small className="field-hint">Obligatorio</small>
+              </div>
               <input
+                id="auth-fullname"
+                name="name"
+                type="text"
                 autoComplete="name"
+                enterKeyHint="next"
                 placeholder="Ej. Camila Restrepo"
                 required
-                minLength="2"
+                minLength={2}
+                aria-invalid={touched.name && Boolean(fieldErrors.name) ? 'true' : 'false'}
+                aria-describedby={touched.name && fieldErrors.name ? 'auth-name-error' : undefined}
+                className={
+                  touched.name
+                    ? fieldErrors.name
+                      ? 'input-mismatch'
+                      : 'input-confirmed'
+                    : ''
+                }
                 value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
+                onChange={e => updateField('name', e.target.value, e.currentTarget)}
+                onBlur={() => markTouched('name')}
               />
-            </label>
+              {touched.name && fieldErrors.name && (
+                <div id="auth-name-error" className="auth-field-feedback error">
+                  <span role="img" aria-label="Error">
+                    ✕
+                  </span>{' '}
+                  {fieldErrors.name}
+                </div>
+              )}
+            </div>
           )}
-          <label>
-            Correo electrónico
+
+          <div className="auth-field">
+            <div className="form-field-head">
+              <label htmlFor="auth-email">
+                Correo electrónico <span className="required-mark">*</span>
+              </label>
+              <small className="field-hint">Obligatorio</small>
+            </div>
             <input
+              id="auth-email"
+              name="email"
               type="email"
-              autoComplete="email"
+              autoComplete="username"
+              spellCheck={false}
+              enterKeyHint="next"
               placeholder="tu@correo.com"
               required
+              aria-invalid={touched.email && Boolean(fieldErrors.email) ? 'true' : 'false'}
+              aria-describedby={touched.email && fieldErrors.email ? 'auth-email-error' : undefined}
+              className={
+                touched.email
+                  ? fieldErrors.email
+                    ? 'input-mismatch'
+                    : 'input-confirmed'
+                  : ''
+              }
               value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
+              onChange={e => updateField('email', e.target.value, e.currentTarget)}
+              onBlur={() => markTouched('email')}
             />
-          </label>
-          <label>
-            Contraseña
-            <input
-              type="password"
-              autoComplete={register ? 'new-password' : 'current-password'}
-              placeholder="Mínimo 8 caracteres"
-              required
-              minLength="8"
-              value={form.password}
-              onChange={e => setForm({ ...form, password: e.target.value })}
-            />
-          </label>
+            {touched.email && fieldErrors.email && (
+              <div id="auth-email-error" className="auth-field-feedback error">
+                <span role="img" aria-label="Error">
+                  ✕
+                </span>{' '}
+                {fieldErrors.email}
+              </div>
+            )}
+          </div>
+
+          <div className="auth-field">
+            <div className="form-field-head">
+              <label htmlFor="auth-password">
+                Contraseña <span className="required-mark">*</span>
+              </label>
+              {register ? (
+                <button
+                  type="button"
+                  className={`password-info-trigger ${allPasswordRulesMet ? 'all-met' : ''}`}
+                  aria-expanded={showRulesHelp}
+                  aria-controls="auth-password-rules"
+                  onClick={() => setShowRulesHelp(prev => !prev)}
+                  title="Ver requisitos de seguridad de la contraseña"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <span>
+                    Requisitos ({metRulesCount}/{passwordRules.length})
+                  </span>
+                </button>
+              ) : (
+                <small className="field-hint">Mín. 8 caracteres</small>
+              )}
+            </div>
+            <div className="password-input-wrap">
+              <input
+                id="auth-password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete={register ? 'new-password' : 'current-password'}
+                enterKeyHint={register ? 'next' : 'done'}
+                placeholder={
+                  register
+                    ? 'Ej. MiBurger.2026*'
+                    : 'Mínimo 8 caracteres'
+                }
+                required
+                minLength={8}
+                aria-invalid={touched.password && Boolean(fieldErrors.password) ? 'true' : 'false'}
+                aria-describedby={
+                  [
+                    register ? 'auth-password-rules' : null,
+                    touched.password && fieldErrors.password ? 'auth-password-error' : null
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined
+                }
+                className={
+                  touched.password || (register && form.password.length > 0)
+                    ? fieldErrors.password
+                      ? touched.password
+                        ? 'input-mismatch'
+                        : ''
+                      : 'input-confirmed'
+                    : ''
+                }
+                value={form.password}
+                onChange={e => updateField('password', e.target.value, e.currentTarget)}
+                onFocus={() => {
+                  if (register) setShowRulesHelp(true);
+                }}
+                onBlur={() => markTouched('password')}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                aria-pressed={showPassword}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-describedby="password-toggle-warning"
+                title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                onClick={() => setShowPassword(v => !v)}
+              >
+                <EyeIcon open={showPassword} />
+                <span>{showPassword ? 'Ocultar' : 'Ver'}</span>
+              </button>
+            </div>
+
+            {register && (
+              <div
+                id="auth-password-rules"
+                className={`password-rules-box ${allPasswordRulesMet ? 'all-met' : ''} ${showRulesHelp ? 'open' : 'collapsed'}`}
+                role="region"
+                aria-label="Requisitos de la contraseña"
+              >
+                <div className="password-rules-head">
+                  <span className="password-rules-title">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <span>
+                      {allPasswordRulesMet
+                        ? '¡Contraseña segura! Todos los requisitos cumplidos'
+                        : 'Tu contraseña debe cumplir estas 4 reglas:'}
+                    </span>
+                  </span>
+                  <span className={`password-rules-badge ${allPasswordRulesMet ? 'met' : ''}`}>
+                    {metRulesCount}/{passwordRules.length}
+                  </span>
+                </div>
+
+                <div className="password-strength-meter" aria-hidden="true">
+                  {passwordRules.map((rule, index) => (
+                    <span
+                      key={rule.id}
+                      className={`strength-segment ${index < metRulesCount ? (allPasswordRulesMet ? 'met' : 'partial') : ''}`}
+                    />
+                  ))}
+                </div>
+
+                {showRulesHelp && (
+                  <ul className="password-rules-list">
+                    {passwordRules.map(rule => (
+                      <li
+                        key={rule.id}
+                        className={`password-rule-item ${rule.met ? 'met' : 'pending'}`}
+                      >
+                        <span
+                          className="password-rule-icon"
+                          role="img"
+                          aria-label={rule.met ? 'Cumplido' : 'Pendiente'}
+                        >
+                          {rule.met ? '✓' : '○'}
+                        </span>
+                        <span className="password-rule-text">{rule.label}</span>
+                        <code className="password-rule-tag">{rule.detail}</code>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {touched.password && fieldErrors.password && (
+              <div id="auth-password-error" className="auth-field-feedback error">
+                <span role="img" aria-label="Error">
+                  ✕
+                </span>{' '}
+                {fieldErrors.password}
+              </div>
+            )}
+          </div>
+
+          {register && (
+            <div className="auth-field">
+              <div className="form-field-head">
+                <label htmlFor="auth-confirm-password">
+                  Confirmar contraseña <span className="required-mark">*</span>
+                </label>
+                <small className="field-hint">Debe coincidir</small>
+              </div>
+              <div className="password-input-wrap">
+                <input
+                  id="auth-confirm-password"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  enterKeyHint="done"
+                  placeholder="Repite tu contraseña"
+                  required
+                  minLength={8}
+                  aria-invalid={passwordMismatch ? 'true' : 'false'}
+                  aria-describedby={
+                    passwordMismatch
+                      ? 'confirm-password-error'
+                      : passwordConfirmed
+                        ? 'confirm-password-ok'
+                        : undefined
+                  }
+                  className={
+                    passwordMismatch
+                      ? 'input-mismatch'
+                      : passwordConfirmed
+                        ? 'input-confirmed'
+                        : ''
+                  }
+                  value={form.confirmPassword}
+                  onChange={e => updateField('confirmPassword', e.target.value, e.currentTarget)}
+                  onBlur={() => markTouched('confirmPassword')}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  aria-pressed={showConfirmPassword}
+                  aria-label={
+                    showConfirmPassword
+                      ? 'Ocultar confirmación de contraseña'
+                      : 'Mostrar confirmación de contraseña'
+                  }
+                  aria-describedby="password-toggle-warning"
+                  title={
+                    showConfirmPassword
+                      ? 'Ocultar confirmación de contraseña'
+                      : 'Mostrar confirmación de contraseña'
+                  }
+                  onClick={() => setShowConfirmPassword(v => !v)}
+                >
+                  <EyeIcon open={showConfirmPassword} />
+                  <span>{showConfirmPassword ? 'Ocultar' : 'Ver'}</span>
+                </button>
+              </div>
+              {passwordMismatch && (
+                <div id="confirm-password-error" className="auth-field-feedback error">
+                  <span role="img" aria-label="Error">
+                    ✕
+                  </span>{' '}
+                  {fieldErrors.confirmPassword}
+                </div>
+              )}
+              {!passwordMismatch && passwordConfirmed && (
+                <div id="confirm-password-ok" className="auth-field-feedback success">
+                  <span aria-hidden="true">✓</span> Las contraseñas coinciden.
+                </div>
+              )}
+            </div>
+          )}
+
           <AlertBanner
             type="error"
-            title="No fue posible iniciar sesión"
+            title={register ? 'No fue posible crear la cuenta' : 'No fue posible iniciar sesión'}
             message={status.error}
             onClose={() => setStatus(s => ({ ...s, error: '' }))}
           />
-          <button className="button full" disabled={status.loading}>
+
+          {!isFormValid && (
+            <p className="form-required-hint" role="status">
+              Completa todos los campos obligatorios (<span className="required-mark">*</span>) para habilitar el botón.
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="button full"
+            disabled={status.loading || !isFormValid}
+            title={
+              !isFormValid
+                ? 'Diligencia todos los campos obligatorios para continuar'
+                : undefined
+            }
+          >
             {status.loading ? (
               <>
                 <Spinner size="sm" label="Procesando autenticación…" />
@@ -234,13 +755,7 @@ function Auth({ onAuth, goHome }) {
             )}
           </button>
         </form>
-        <button
-          className="switch-auth"
-          onClick={() => {
-            setRegister(!register);
-            setStatus({ loading: false, error: '' });
-          }}
-        >
+        <button type="button" className="switch-auth" onClick={toggleAuthMode}>
           {register ? '¿Ya tienes cuenta? Inicia sesión' : '¿Nuevo en Secret Bite? Quiero registrarme'}
         </button>
       </section>
@@ -675,6 +1190,10 @@ export default function App() {
         <Route
           path="/pedidos"
           element={user?.role === 'CLIENT' ? <Orders /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/seguridad"
+          element={user ? <ChangePassword user={user} /> : <Navigate to="/auth" replace />}
         />
         <Route
           path="/cocina"

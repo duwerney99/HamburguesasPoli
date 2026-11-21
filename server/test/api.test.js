@@ -54,10 +54,79 @@ test('TC-03: un cliente no puede crear campañas', async () => {
 test('registro, sesión y consulta del usuario autenticado', async () => {
   const { db, app } = fixture();
   try {
-    const register = await request(app).post('/api/auth/register').send({ name: 'Ana Prueba', email: 'ana@example.com', password: 'Segura123!' }).expect(201);
+    const weakNoSpecial = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Ana Prueba',
+        email: 'ana@example.com',
+        password: 'Segura123',
+        confirmPassword: 'Segura123'
+      })
+      .expect(400);
+    expect(weakNoSpecial.body.error).toMatch(/carácter especial/i);
+
+    const weakNoUpper = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Ana Prueba',
+        email: 'ana@example.com',
+        password: 'segura123.',
+        confirmPassword: 'segura123.'
+      })
+      .expect(400);
+    expect(weakNoUpper.body.error).toMatch(/mayúscula/i);
+
+    const mismatch = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Ana Prueba',
+        email: 'ana@example.com',
+        password: 'Segura123!',
+        confirmPassword: 'OtraPassword123!'
+      })
+      .expect(400);
+    expect(mismatch.body.error).toMatch(/no coinciden/i);
+
+    const register = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Ana Prueba',
+        email: 'ana@example.com',
+        password: 'Segura.123*',
+        confirmPassword: 'Segura.123*'
+      })
+      .expect(201);
     expect(register.body.user.role).toBe('CLIENT');
     const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${register.body.token}`).expect(200);
     expect(me.body.user.email).toBe('ana@example.com');
+
+    // Cambiar contraseña: rechaza contraseña actual errónea
+    await request(app)
+      .put('/api/auth/password')
+      .set('Authorization', `Bearer ${register.body.token}`)
+      .send({
+        currentPassword: 'ClaveActualIncorrecta.1*',
+        newPassword: 'NuevaClave.2026*',
+        confirmPassword: 'NuevaClave.2026*'
+      })
+      .expect(400);
+
+    // Cambiar contraseña exitosamente y autenticar con la nueva contraseña
+    const changed = await request(app)
+      .put('/api/auth/password')
+      .set('Authorization', `Bearer ${register.body.token}`)
+      .send({
+        currentPassword: 'Segura.123*',
+        newPassword: 'NuevaClave.2026*',
+        confirmPassword: 'NuevaClave.2026*'
+      })
+      .expect(200);
+    expect(changed.body.message).toMatch(/actualizada/i);
+
+    await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'ana@example.com', password: 'NuevaClave.2026*' })
+      .expect(200);
   } finally { db.close(); }
 });
 
@@ -105,6 +174,32 @@ test('el administrador puede asignar el rol CHEF y queda auditado', async () => 
     const response = await request(app).put(`/api/admin/users/${client.id}/role`).set('Authorization', `Bearer ${adminToken}`).send({ role: 'CHEF' }).expect(200);
     expect(response.body.user.role).toBe('CHEF');
     expect(db.prepare("SELECT COUNT(*) total FROM audit_logs WHERE action='USER_ROLE_CHANGED'").get().total).toBe(1);
+
+    // También puede crear un nuevo usuario interno directamente con rol CHEF o ADMIN
+    const createdChef = await request(app)
+      .post('/api/admin/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Chef Nuevo Parrilla',
+        email: 'chefnuevo@secretbite.co',
+        role: 'CHEF',
+        password: 'ChefNuevo.123*',
+        confirmPassword: 'ChefNuevo.123*'
+      })
+      .expect(201);
+    expect(createdChef.body.user).toMatchObject({
+      name: 'Chef Nuevo Parrilla',
+      email: 'chefnuevo@secretbite.co',
+      role: 'CHEF'
+    });
+
+    // El nuevo Chef puede iniciar sesión inmediatamente con su rol CHEF
+    const chefLogin = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'chefnuevo@secretbite.co', password: 'ChefNuevo.123*' })
+      .expect(200);
+    expect(chefLogin.body.user.role).toBe('CHEF');
+    expect(db.prepare("SELECT COUNT(*) total FROM audit_logs WHERE action='STAFF_USER_CREATED'").get().total).toBe(1);
   } finally { db.close(); }
 });
 
@@ -177,7 +272,8 @@ test('el dashboard administrativo entrega KPIs y series para gráficas y el rout
       '/admin/cocina',
       '/admin/usuarios',
       '/admin/clientes',
-      '/admin/trazabilidad'
+      '/admin/trazabilidad',
+      '/admin/seguridad'
     ]);
   } finally {
     db.close();

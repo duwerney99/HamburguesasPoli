@@ -9,6 +9,7 @@ import Kitchen from '../Kitchen.jsx';
 import AdminUsers from './AdminUsers.jsx';
 import AdminClients from './AdminClients.jsx';
 import AdminAudit from './AdminAudit.jsx';
+import ChangePassword from '../ChangePassword.jsx';
 
 function AdminRouteIcon({ id }) {
   switch (id) {
@@ -79,6 +80,13 @@ function AdminRouteIcon({ id }) {
           <polyline points="12 6 12 12 16 14" />
         </svg>
       );
+    case 'seguridad':
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -91,7 +99,7 @@ export default function AdminLayout({ user, logout }) {
   const isChef = user?.role === 'CHEF';
   const defaultRoutePath = isChef ? '/admin/cocina' : '/admin/dashboard';
   const visibleRoutes = isChef
-    ? ADMIN_ROUTES.filter(route => route.id === 'cocina')
+    ? ADMIN_ROUTES.filter(route => route.id === 'cocina' || route.id === 'seguridad')
     : ADMIN_ROUTES;
 
   const normalizedPath = normalizePath(location.pathname);
@@ -260,6 +268,7 @@ export default function AdminLayout({ user, logout }) {
             <Routes>
               <Route index element={<Navigate to="cocina" replace />} />
               <Route path="cocina" element={<Kitchen />} />
+              <Route path="seguridad" element={<ChangePassword user={user} isAdminPanel />} />
               <Route path="*" element={<Navigate to="cocina" replace />} />
             </Routes>
           ) : (
@@ -273,6 +282,7 @@ export default function AdminLayout({ user, logout }) {
               <Route path="usuarios" element={<AdminUsers />} />
               <Route path="clientes" element={<AdminClients />} />
               <Route path="trazabilidad" element={<AdminAudit />} />
+              <Route path="seguridad" element={<ChangePassword user={user} isAdminPanel />} />
               <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
           )}

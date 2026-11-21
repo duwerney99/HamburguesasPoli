@@ -7,7 +7,7 @@ export class AuthSessionEntity {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role || user.app_role || 'CLIENT'
+      role: user.app_role || user.role || 'CLIENT'
     };
     this.token = token || accessToken;
     this.accessToken = accessToken || token;

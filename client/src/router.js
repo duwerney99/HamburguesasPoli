@@ -54,6 +54,13 @@ export const ADMIN_ROUTES = [
     id: 'trazabilidad',
     label: 'Trazabilidad',
     description: 'Bitácora inmutable y paginada de eventos de auditoría.'
+  },
+  {
+    path: '/admin/seguridad',
+    segment: 'seguridad',
+    id: 'seguridad',
+    label: 'Cambiar contraseña',
+    description: 'Actualización de contraseña actual con confirmación y reglas de seguridad.'
   }
 ];
 

@@ -23,6 +23,12 @@ export function BurgerModal({ open, burger, onClose, onSaved }) {
   );
 
   const [form, setForm] = useState(initial);
+  const [touched, setTouched] = useState({
+    name: false,
+    priceCop: false,
+    description: false,
+    ingredients: false
+  });
   const [fileMeta, setFileMeta] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
@@ -35,10 +41,48 @@ export function BurgerModal({ open, burger, onClose, onSaved }) {
   useEffect(() => {
     if (open) {
       setForm(initial);
+      setTouched({
+        name: false,
+        priceCop: false,
+        description: false,
+        ingredients: false
+      });
       setFileMeta(null);
       setError('');
     }
   }, [open, initial]);
+
+  const fieldErrors = useMemo(() => {
+    const errors = {};
+    const name = String(form.name || '').trim();
+    if (!name) {
+      errors.name = 'El nombre de la hamburguesa es obligatorio.';
+    } else if (name.length < 2) {
+      errors.name = 'El nombre debe tener al menos 2 caracteres.';
+    }
+
+    const price = Number(form.priceCop);
+    if (!Number.isFinite(price) || price < 1000 || price > 500000) {
+      errors.priceCop = 'Ingresa un precio válido entre $1.000 y $500.000 COP.';
+    }
+
+    const desc = String(form.description || '').trim();
+    if (!desc) {
+      errors.description = 'La descripción gastronómica es obligatoria.';
+    } else if (desc.length < 10) {
+      errors.description = `Describe la receta con al menos 10 caracteres (llevas ${desc.length}/10).`;
+    }
+
+    const ing = String(form.ingredients || '').trim();
+    if (!ing) {
+      errors.ingredients = 'Los ingredientes principales son obligatorios.';
+    } else if (ing.length < 3) {
+      errors.ingredients = 'Incluye al menos un ingrediente válido (mín. 3 caracteres).';
+    }
+    return errors;
+  }, [form.name, form.priceCop, form.description, form.ingredients]);
+
+  const isBurgerFormValid = Object.keys(fieldErrors).length === 0;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -196,10 +240,17 @@ export function BurgerModal({ open, burger, onClose, onSaved }) {
                   required
                   minLength="2"
                   placeholder="Ej. Smoky Bourbon Melt"
+                  aria-invalid={touched.name && Boolean(fieldErrors.name) ? 'true' : 'false'}
                   value={form.name}
                   onChange={e => setForm({ ...form, name: e.target.value })}
+                  onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
                   className="modal-field-input"
                 />
+                {touched.name && fieldErrors.name && (
+                  <div className="auth-field-feedback error">
+                    <span role="img" aria-label="Error">✕</span> {fieldErrors.name}
+                  </div>
+                )}
               </div>
 
               <div className="modal-field">
@@ -216,11 +267,18 @@ export function BurgerModal({ open, burger, onClose, onSaved }) {
                     step="500"
                     required
                     placeholder="28000"
+                    aria-invalid={touched.priceCop && Boolean(fieldErrors.priceCop) ? 'true' : 'false'}
                     value={form.priceCop}
                     onChange={e => setForm({ ...form, priceCop: Number(e.target.value) })}
+                    onBlur={() => setTouched(prev => ({ ...prev, priceCop: true }))}
                     className="modal-field-input modal-field-price"
                   />
                 </div>
+                {touched.priceCop && fieldErrors.priceCop && (
+                  <div className="auth-field-feedback error">
+                    <span role="img" aria-label="Error">✕</span> {fieldErrors.priceCop}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -261,10 +319,17 @@ export function BurgerModal({ open, burger, onClose, onSaved }) {
                 required
                 minLength="10"
                 placeholder="Describe el perfil de sabor, punto de cocción, jugosidad y texturas..."
+                aria-invalid={touched.description && Boolean(fieldErrors.description) ? 'true' : 'false'}
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
+                onBlur={() => setTouched(prev => ({ ...prev, description: true }))}
                 className="modal-field-textarea"
               />
+              {touched.description && fieldErrors.description && (
+                <div className="auth-field-feedback error">
+                  <span role="img" aria-label="Error">✕</span> {fieldErrors.description}
+                </div>
+              )}
             </div>
 
             {/* Fila 4: Ingredientes separados por coma */}
@@ -281,10 +346,17 @@ export function BurgerModal({ open, burger, onClose, onSaved }) {
                 rows="2"
                 required
                 placeholder="Carne Angus 200g, cheddar madurado 12 meses, tocineta glaseada en maple, cebolla crispy..."
+                aria-invalid={touched.ingredients && Boolean(fieldErrors.ingredients) ? 'true' : 'false'}
                 value={form.ingredients}
                 onChange={e => setForm({ ...form, ingredients: e.target.value })}
+                onBlur={() => setTouched(prev => ({ ...prev, ingredients: true }))}
                 className="modal-field-textarea"
               />
+              {touched.ingredients && fieldErrors.ingredients && (
+                <div className="auth-field-feedback error">
+                  <span role="img" aria-label="Error">✕</span> {fieldErrors.ingredients}
+                </div>
+              )}
             </div>
 
             {/* Fila 5: Zona de Fotografía del producto */}
@@ -350,6 +422,11 @@ export function BurgerModal({ open, burger, onClose, onSaved }) {
           </div>
 
           <footer className="admin-modal-footer">
+            {!isBurgerFormValid && (
+              <span className="form-required-hint mr-auto">
+                Completa los campos obligatorios (*) para habilitar el guardado.
+              </span>
+            )}
             <button
               type="button"
               className="button ghost"
@@ -361,7 +438,7 @@ export function BurgerModal({ open, burger, onClose, onSaved }) {
             <button
               type="submit"
               className="button"
-              disabled={submitting || optimizing}
+              disabled={submitting || optimizing || !isBurgerFormValid}
             >
               {submitting ? (
                 <>
